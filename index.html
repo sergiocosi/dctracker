@@ -351,6 +351,68 @@
     padding: 32px;
     font-size: 13px;
   }
+  .paradox-section {
+    margin-top: 20px;
+    border-top: 2px solid var(--border);
+    padding-top: 16px;
+  }
+  .paradox-title {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--red);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .paradox-card {
+    background: rgba(231,76,60,0.07);
+    border: 1px solid rgba(231,76,60,0.25);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    font-size: 13px;
+  }
+  .paradox-disc {
+    font-weight: 600;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .paradox-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+  .paradox-side {
+    background: var(--surface2);
+    border-radius: 6px;
+    padding: 7px 10px;
+    font-size: 12px;
+    line-height: 1.6;
+  }
+  .paradox-side .ps-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: var(--text-muted);
+    margin-bottom: 2px;
+  }
+  .paradox-constraint {
+    margin-top: 6px;
+    font-size: 12px;
+    color: var(--red);
+    font-weight: 500;
+  }
+  .paradox-empty {
+    font-size: 12px;
+    color: var(--text-dim);
+    padding: 8px 0;
+  }
 
   .filter-row {
     display: flex;
@@ -681,22 +743,25 @@ async function runAnalysis() {
   if (error) { el.innerHTML = `<div class="no-data">Errore: ${error.message}</div>`; return; }
   if (!data.length) { el.innerHTML = '<div class="no-data">Nessun dato nel database.</div>'; return; }
 
-  // Estrai punti per disciplina, taggati con nick e row_id per evitare
-  // confronti tra osservazioni dello stesso giocatore (stesso nick = stesso atleta/coach)
+  // Paradossi: coppie same-game dove la somma atleta+coach favorisce il perdente
+  // Sono i casi più informativi: ogni paradosso dà un limite minimo di k_coach/k_atleta
+  const paradoxes = [];
+
+  // byDisc: raccoglie tutti i punti (miei + avversari) per ogni disciplina,
+  // ciascuno identificato da row_id + side per non confrontare un punto con se stesso.
+  // Same-game W = io vs avversario nella stessa riga (più affidabile).
+  // Cross-game X = qualsiasi coppia di righe diverse con atleta simile e coach diverso.
   const byDisc = {};
   for (const row of data) {
     const d = row.discipline;
     if (!byDisc[d]) byDisc[d] = { sport: row.sport, points: [], _within: [] };
 
-    // Punto "mio" taggato con nick del giocatore che ha inserito la riga
     if (row.my_dp && row.my_atleta && row.my_coach)
-      byDisc[d].points.push({ dp: row.my_dp, atleta: row.my_atleta, coach: row.my_coach, nick: row.nick, row_id: row.id });
+      byDisc[d].points.push({ dp: row.my_dp, atleta: row.my_atleta, coach: row.my_coach, uid: row.id + '_my' });
 
-    // Punto "avversario" taggato con nick fittizio univoco (non è un account reale)
     if (row.opp_dp && row.opp_atleta && row.opp_coach)
-      byDisc[d].points.push({ dp: row.opp_dp, atleta: row.opp_atleta, coach: row.opp_coach, nick: '__opp__' + row.id, row_id: row.id });
+      byDisc[d].points.push({ dp: row.opp_dp, atleta: row.opp_atleta, coach: row.opp_coach, uid: row.id + '_opp' });
 
-    // Coppie same-game (le più affidabili: stessa gara, condizioni identiche)
     if (row.my_dp && row.opp_dp && row.my_atleta && row.opp_atleta && row.my_coach && row.opp_coach)
       byDisc[d]._within.push(row);
   }
@@ -707,24 +772,53 @@ async function runAnalysis() {
   for (const disc of sortedDiscs) {
     const { sport: sp, points, _within } = byDisc[disc];
     const coeffs = [];
+    const seenW = new Set();  // uid pairs già coperti da W, evitiamo doppioni in X
 
-    // 1) Coppie same-game W: io vs avversario nella stessa riga — massima affidabilità
+    // 1) Same-game W: stesso match, condizioni identiche — massima affidabilità
     for (const row of _within) {
       const dAtl = Math.abs(row.my_atleta - row.opp_atleta);
       const dCoach = row.my_coach - row.opp_coach;
       if (dAtl <= maxDeltaAtleta && dCoach !== 0) {
         const dDP = row.my_dp - row.opp_dp;
         coeffs.push({ v: (dDP / dCoach) * 200, source: 'W', dAtl, dCoach });
+        seenW.add(row.id + '_my|' + row.id + '_opp');
+
+        // Paradosso: somma atleta+coach favorisce un lato ma i DP favoriscono l'altro
+        const mySum  = (row.my_atleta  || 0) + (row.my_coach  || 0);
+        const oppSum = (row.opp_atleta || 0) + (row.opp_coach || 0);
+        const myWins  = row.my_dp  > row.opp_dp;
+        const oppWins = row.opp_dp > row.my_dp;
+        const isParadox = (mySum > oppSum && oppWins) || (oppSum > mySum && myWins);
+        if (isParadox) {
+          // Chi ha la somma più alta ma perde?
+          const loserAtl   = mySum > oppSum ? row.my_atleta  : row.opp_atleta;
+          const loserCoach = mySum > oppSum ? row.my_coach   : row.opp_coach;
+          const loserDP    = mySum > oppSum ? row.my_dp      : row.opp_dp;
+          const winnerAtl  = mySum > oppSum ? row.opp_atleta : row.my_atleta;
+          const winnerCoach= mySum > oppSum ? row.opp_coach  : row.my_coach;
+          const winnerDP   = mySum > oppSum ? row.opp_dp     : row.my_dp;
+          // Vincolo: (winnerAtl-loserAtl)*k_atl + (winnerCoach-loserCoach)*k_coach > 0
+          // se winnerCoach > loserCoach → k_coach/k_atl > (loserAtl-winnerAtl)/(winnerCoach-loserCoach)
+          const dA = loserAtl - winnerAtl;   // atleta extra del perdente
+          const dC = winnerCoach - loserCoach; // coach extra del vincitore
+          const ratio = dC > 0 ? (dA / dC).toFixed(2) : null;
+          paradoxes.push({
+            disc, sport: sp,
+            loserAtl, loserCoach, loserDP,
+            winnerAtl, winnerCoach, winnerDP,
+            dAtl, dCoach: Math.abs(dCoach), dDP: Math.abs(dDP),
+            ratio, date: row.created_at
+          });
+        }
       }
     }
 
-    // 2) Coppie cross-game X: solo tra nick diversi e row_id diverso
-    // Evita confronti tra osservazioni dello stesso giocatore (stesso nick = stesso atleta/coach fisso)
+    // 2) Cross-game X: tutte le coppie di righe diverse
+    // Filtra: atleta simile, coach diverso, non già coperta da W
     for (let i = 0; i < points.length; i++) {
       for (let j = i + 1; j < points.length; j++) {
         const a = points[i], b = points[j];
-        // Salta se stesso nick o stessa riga (già coperta da W)
-        if (a.nick === b.nick || a.row_id === b.row_id) continue;
+        if (seenW.has(a.uid + '|' + b.uid) || seenW.has(b.uid + '|' + a.uid)) continue;
         const dAtl = Math.abs(a.atleta - b.atleta);
         const dCoach = a.coach - b.coach;
         if (dAtl <= maxDeltaAtleta && dCoach !== 0) {
@@ -777,8 +871,74 @@ async function runAnalysis() {
     `;
   }
 
+  // ── Sezione paradossi ──────────────────────────────────────────────
+  let paradoxHtml = '<div class="paradox-section">';
+  paradoxHtml += '<div class="paradox-title">⚡ Paradossi — somma a favore ma DP contro</div>';
+
+  if (paradoxes.length === 0) {
+    paradoxHtml += '<div class="paradox-empty">Nessun paradosso trovato con i parametri attuali.</div>';
+  } else {
+    // Raggruppa per disciplina
+    const byDiscp = {};
+    for (const p of paradoxes) {
+      if (!byDiscp[p.disc]) byDiscp[p.disc] = [];
+      byDiscp[p.disc].push(p);
+    }
+    for (const [disc, ps] of Object.entries(byDiscp)) {
+      const badge = ps[0].sport === 'deca' ? 'badge-deca' : 'badge-hep';
+      const label = ps[0].sport === 'deca' ? 'D' : 'H';
+      for (const p of ps) {
+        const ratioTxt = p.ratio !== null
+          ? `k_coach/k_atleta > <b>${p.ratio}</b> (coach vale almeno ${p.ratio}× l'atleta)`
+          : 'rapporto non calcolabile';
+        paradoxHtml += `
+          <div class="paradox-card">
+            <div class="paradox-disc">
+              ${disc} <span class="log-sport-badge ${badge}">${label}</span>
+              <span style="font-size:11px;color:var(--text-muted);font-weight:400">
+                Δatleta=${p.dAtl} · Δcoach=${p.dCoach} · ΔDP=${p.dDP}
+              </span>
+            </div>
+            <div class="paradox-row">
+              <div class="paradox-side">
+                <div class="ps-label">⚡ somma più alta ma PERDE</div>
+                Atleta <b>${p.loserAtl}</b> + Coach <b>${p.loserCoach}</b>
+                = ${p.loserAtl + p.loserCoach}<br>
+                DP: <b style="color:var(--red)">${p.loserDP}</b>
+              </div>
+              <div class="paradox-side">
+                <div class="ps-label">✓ somma più bassa ma VINCE</div>
+                Atleta <b>${p.winnerAtl}</b> + Coach <b>${p.winnerCoach}</b>
+                = ${p.winnerAtl + p.winnerCoach}<br>
+                DP: <b style="color:var(--green)">${p.winnerDP}</b>
+              </div>
+            </div>
+            <div class="paradox-constraint">→ ${ratioTxt}</div>
+          </div>`;
+      }
+    }
+    // Stima aggregata del rapporto minimo
+    const ratios = paradoxes.filter(p => p.ratio !== null).map(p => parseFloat(p.ratio));
+    if (ratios.length > 0) {
+      const maxRatio = Math.max(...ratios).toFixed(2);
+      const medRatio = (ratios.sort((a,b)=>a-b)[Math.floor(ratios.length/2)]).toFixed(2);
+      paradoxHtml += `
+        <div class="paradox-card" style="background:rgba(46,204,113,0.07);border-color:rgba(46,204,113,0.3);margin-top:12px">
+          <div style="font-weight:600;margin-bottom:6px">📊 Sintesi dai ${paradoxes.length} paradossi</div>
+          <div style="font-size:13px;line-height:1.8">
+            Vincolo più stretto: k_coach/k_atleta > <b>${maxRatio}</b><br>
+            Mediana dei vincoli: k_coach/k_atleta > <b>${medRatio}</b><br>
+            <span style="color:var(--text-muted);font-size:12px">
+              In pratica: 1 punto di coach vale almeno ${maxRatio}× un punto di atleta sulla disciplina peggiore.
+            </span>
+          </div>
+        </div>`;
+    }
+  }
+  paradoxHtml += '</div>';
+
   document.getElementById('analysisResult').innerHTML =
-    html || '<div class="no-data">Nessuna coppia trovata con i parametri selezionati.</div>';
+    (html || '<div class="no-data">Nessuna coppia trovata con i parametri attuali.</div>') + paradoxHtml;
 }
 
 // ── Toast ─────────────────────────────────────────────────────────────
