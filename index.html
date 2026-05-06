@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>DC Coach Tracker</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --deca: #e07b39;
+    --deca-light: #fdf0e6;
+    --deca-dark: #b35e20;
+    --hep: #1a9e8f;
+    --hep-light: #e4f6f4;
+    --hep-dark: #137068;
+    --bg: #0f1117;
+    --surface: #1a1d25;
+    --surface2: #22263a;
+    --border: #2e3348;
+    --text: #e8eaf0;
+    --text-muted: #8892a4;
+    --text-dim: #4a5268;
+    --green: #2ecc71;
+    --red: #e74c3c;
+    --accent: var(--deca);
+    --accent-light: var(--deca-light);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 15px;
+  }
+
+  /* ── Header ── */
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-logo {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    color: var(--deca);
+  }
+  .header-logo span { color: var(--hep); }
+  .header-nick {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .header-nick input {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 6px 10px;
+    border-radius: 8px;
+    font-size: 13px;
+    width: 110px;
+  }
+  .header-nick input::placeholder { color: var(--text-dim); }
+  .nick-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* ── Nav tabs ── */
+  .nav {
+    display: flex;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav-btn {
+    flex: 1;
+    padding: 10px;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+    border: none;
+    background: none;
+    border-bottom: 2px solid transparent;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .nav-btn.active {
+    color: var(--text);
+    border-bottom-color: var(--accent);
+  }
+
+  /* ── Main content ── */
+  .main { padding: 16px; max-width: 640px; margin: 0 auto; }
+
+  /* ── Sport toggle ── */
+  .sport-toggle {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    background: var(--surface2);
+    padding: 4px;
+    border-radius: 12px;
+  }
+  .sport-btn {
+    flex: 1;
+    padding: 12px 8px;
+    border: none;
+    border-radius: 9px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    transition: all 0.2s;
+    background: transparent;
+    color: var(--text-muted);
+  }
+  .sport-btn.active-deca {
+    background: var(--deca);
+    color: #fff;
+  }
+  .sport-btn.active-hep {
+    background: var(--hep);
+    color: #fff;
+  }
+  .sport-badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-left: 4px;
+    vertical-align: middle;
+  }
+  .badge-deca { background: rgba(224,123,57,0.2); color: var(--deca); }
+  .badge-hep  { background: rgba(26,158,143,0.2); color: var(--hep); }
+
+  /* ── Card ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .card-title {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+  }
+
+  /* ── Discipline select ── */
+  .disc-select {
+    width: 100%;
+    padding: 13px 14px;
+    background: var(--surface2);
+    border: 1.5px solid var(--border);
+    color: var(--text);
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 500;
+    margin-bottom: 16px;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%238892a4' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14L2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .disc-select:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+
+  /* ── Two-column form ── */
+  .form-cols {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .form-col-header {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 8px 0 6px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 10px;
+  }
+  .col-my   .form-col-header { color: var(--deca); }
+  .col-opp  .form-col-header { color: var(--text-muted); }
+
+  .field {
+    margin-bottom: 10px;
+  }
+  .field label {
+    display: block;
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+    font-weight: 500;
+  }
+  .field input {
+    width: 100%;
+    padding: 9px 10px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 15px;
+    transition: border-color 0.15s;
+    -webkit-appearance: none;
+  }
+  .field input:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+  .field input::placeholder { color: var(--text-dim); }
+  .field input[type=number]::-webkit-inner-spin-button,
+  .field input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+  .unit-hint {
+    font-size: 10px;
+    color: var(--text-dim);
+    margin-top: 2px;
+  }
+
+  /* ── Submit button ── */
+  .btn-add {
+    width: 100%;
+    padding: 15px;
+    border: none;
+    border-radius: 11px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 6px;
+  }
+  .btn-add:active { transform: scale(0.98); }
+  .btn-add-deca { background: var(--deca); color: #fff; }
+  .btn-add-hep  { background: var(--hep); color: #fff; }
+  .btn-add:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* ── Toast ── */
+  .toast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 12px 20px;
+    border-radius: 10px;
+    font-size: 14px;
+    z-index: 999;
+    transition: transform 0.3s ease;
+    white-space: nowrap;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.ok   { border-left: 3px solid var(--green); }
+  .toast.err  { border-left: 3px solid var(--red); }
+
+  /* ── Session log ── */
+  .log-entry {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .log-entry:last-child { border-bottom: none; }
+  .log-disc {
+    font-weight: 600;
+    min-width: 80px;
+  }
+  .log-dp {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .log-sport-badge {
+    margin-left: auto;
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-weight: 700;
+  }
+  .empty-log {
+    text-align: center;
+    color: var(--text-dim);
+    padding: 24px 0;
+    font-size: 13px;
+  }
+
+  /* ── Analysis ── */
+  .analysis-disc {
+    border-bottom: 1px solid var(--border);
+    padding: 14px 0;
+  }
+  .analysis-disc:last-child { border-bottom: none; }
+  .analysis-disc-name {
+    font-weight: 600;
+    font-size: 15px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .coeff-value {
+    font-size: 26px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+  .coeff-label { font-size: 11px; color: var(--text-muted); }
+  .coeff-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    margin-top: 10px;
+  }
+  .coeff-cell {
+    background: var(--surface2);
+    border-radius: 8px;
+    padding: 10px;
+    text-align: center;
+  }
+  .pairs-info {
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: 6px;
+  }
+  .no-data {
+    text-align: center;
+    color: var(--text-dim);
+    padding: 32px;
+    font-size: 13px;
+  }
+
+  .filter-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+    align-items: center;
+  }
+  .filter-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    white-space: nowrap;
+  }
+  .filter-input {
+    flex: 1;
+    padding: 7px 10px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    color: var(--text);
+    font-size: 13px;
+  }
+  .filter-input:focus { outline: none; border-color: var(--accent); }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-logo">DC<span>&bull;</span>Coach</div>
+  <div class="header-nick">
+    <span class="nick-label">Nick</span>
+    <input type="text" id="nickInput" placeholder="il tuo nick" maxlength="20">
+  </div>
+</div>
+
+<!-- Nav -->
+<div class="nav">
+  <button class="nav-btn active" onclick="switchTab('insert')" id="tab-insert">➕ Inserisci</button>
+  <button class="nav-btn" onclick="switchTab('log')" id="tab-log">📋 Sessione</button>
+  <button class="nav-btn" onclick="switchTab('analysis')" id="tab-analysis">📊 Analisi</button>
+</div>
+
+<div class="main">
+
+  <!-- ═══ INSERT TAB ═══ -->
+  <div class="tab-content active" id="pane-insert">
+
+    <!-- Sport toggle -->
+    <div class="sport-toggle">
+      <button class="sport-btn active-deca" id="btn-deca" onclick="setSport('deca')">
+        🏃 Decathlon <span class="sport-badge badge-deca">M</span>
+      </button>
+      <button class="sport-btn" id="btn-hep" onclick="setSport('hep')">
+        🏃‍♀️ Heptathlon <span class="sport-badge badge-hep">F</span>
+      </button>
+    </div>
+
+    <!-- Discipline select -->
+    <div class="card">
+      <div class="card-title">1. Seleziona disciplina</div>
+      <select class="disc-select" id="discSelect"></select>
+
+      <div class="card-title" style="margin-top:4px">2. Inserisci i dati</div>
+
+      <div class="form-cols">
+        <!-- MY data -->
+        <div class="form-col col-my">
+          <div class="form-col-header">I miei</div>
+          <div class="field">
+            <label>Prestazione</label>
+            <input type="number" step="any" id="my_prest" placeholder="es. 10.28">
+            <div class="unit-hint" id="unit_hint_my"></div>
+          </div>
+          <div class="field">
+            <label>DP</label>
+            <input type="number" id="my_dp" placeholder="es. 1028">
+          </div>
+          <div class="field">
+            <label>Atleta 🔥</label>
+            <input type="number" id="my_atleta" placeholder="es. 7980">
+          </div>
+          <div class="field">
+            <label>Allenatore 💧</label>
+            <input type="number" id="my_coach" placeholder="es. 1000">
+          </div>
+        </div>
+
+        <!-- OPP data -->
+        <div class="form-col col-opp">
+          <div class="form-col-header">Avversario</div>
+          <div class="field">
+            <label>Prestazione</label>
+            <input type="number" step="any" id="opp_prest" placeholder="es. 10.45">
+          </div>
+          <div class="field">
+            <label>DP</label>
+            <input type="number" id="opp_dp" placeholder="es. 986">
+          </div>
+          <div class="field">
+            <label>Atleta 🔥</label>
+            <input type="number" id="opp_atleta" placeholder="es. 8030">
+          </div>
+          <div class="field">
+            <label>Allenatore 💧</label>
+            <input type="number" id="opp_coach" placeholder="es. 1000">
+          </div>
+        </div>
+      </div>
+
+      <button class="btn-add btn-add-deca" id="btnAdd" onclick="submitEntry()">
+        Aggiungi disciplina
+      </button>
+    </div>
+
+  </div>
+
+  <!-- ═══ LOG TAB ═══ -->
+  <div class="tab-content" id="pane-log">
+    <div class="card">
+      <div class="card-title">Inseriti in questa sessione</div>
+      <div id="sessionLog"><div class="empty-log">Nessun dato inserito ancora.</div></div>
+    </div>
+  </div>
+
+  <!-- ═══ ANALYSIS TAB ═══ -->
+  <div class="tab-content" id="pane-analysis">
+    <div class="card">
+      <div class="card-title">Parametri</div>
+      <div class="filter-row">
+        <span class="filter-label">Max Δ atleta</span>
+        <input class="filter-input" type="number" id="filterAtleta" value="150" min="0" max="500">
+      </div>
+      <div class="filter-row">
+        <span class="filter-label">Sport</span>
+        <select class="filter-input" id="filterSport">
+          <option value="all">Tutti</option>
+          <option value="deca">Solo Decathlon</option>
+          <option value="hep">Solo Heptathlon</option>
+        </select>
+      </div>
+      <button class="btn-add btn-add-deca" style="margin-top:8px" onclick="runAnalysis()">
+        Aggiorna analisi
+      </button>
+    </div>
+    <div id="analysisResult"><div class="no-data">Premi "Aggiorna analisi" per caricare i dati dal database.</div></div>
+  </div>
+
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPABASE_URL = 'https://wkrkqkvswdwdjghfwebo.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indrcmtxa3Zzd2R3ZGpnaGZ3ZWJvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2OTA3OTksImV4cCI6MjA4OTI2Njc5OX0.hBgyybr8i2GPG9rFPsZGOsJ9EyWEBPbrcJ96ttkeRbI';
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ── Disciplines ─────────────────────────────────────────────────────
+const DECA = [
+  { name: '100m',        unit: 'sec',    type: 'run' },
+  { name: 'Lungo',       unit: 'm',      type: 'field' },
+  { name: 'Peso',        unit: 'm',      type: 'field' },
+  { name: 'Alto',        unit: 'm',      type: 'field' },
+  { name: '400m',        unit: 'sec',    type: 'run' },
+  { name: '110H',        unit: 'sec',    type: 'run' },
+  { name: 'Disco',       unit: 'm',      type: 'field' },
+  { name: 'Asta',        unit: 'm',      type: 'field' },
+  { name: 'Giavellotto', unit: 'm',      type: 'field' },
+  { name: '1500m',       unit: 'sec',    type: 'run' },
+];
+const HEP = [
+  { name: '100m ost.',   unit: 'sec',    type: 'run' },
+  { name: 'Alto',        unit: 'm',      type: 'field' },
+  { name: 'Peso',        unit: 'm',      type: 'field' },
+  { name: '200m',        unit: 'sec',    type: 'run' },
+  { name: 'Lungo',       unit: 'm',      type: 'field' },
+  { name: 'Giavellotto', unit: 'm',      type: 'field' },
+  { name: '800m',        unit: 'sec',    type: 'run' },
+];
+
+// ── State ────────────────────────────────────────────────────────────
+let sport = 'deca';
+let sessionEntries = [];
+
+// ── Init ─────────────────────────────────────────────────────────────
+window.onload = () => {
+  const saved = localStorage.getItem('dc_nick');
+  if (saved) document.getElementById('nickInput').value = saved;
+  document.getElementById('nickInput').addEventListener('input', e => {
+    localStorage.setItem('dc_nick', e.target.value.trim());
+  });
+  buildDiscSelect();
+};
+
+function buildDiscSelect() {
+  const list = sport === 'deca' ? DECA : HEP;
+  const sel = document.getElementById('discSelect');
+  sel.innerHTML = list.map((d, i) =>
+    `<option value="${d.name}" data-unit="${d.unit}">${i+1}. ${d.name}  (${d.unit === 'sec' ? '⏱ secondi' : '📏 metri'})</option>`
+  ).join('');
+  updateUnit();
+  sel.addEventListener('change', updateUnit);
+}
+
+function updateUnit() {
+  const sel = document.getElementById('discSelect');
+  const opt = sel.options[sel.selectedIndex];
+  const unit = opt ? opt.dataset.unit : '';
+  const hint = unit === 'sec'
+    ? '⏱ inserisci in secondi (es. 1500m → 224.856)'
+    : '📏 inserisci in metri (es. 8.485)';
+  document.getElementById('unit_hint_my').textContent = hint;
+}
+
+function setSport(s) {
+  sport = s;
+  document.getElementById('btn-deca').className = 'sport-btn' + (s === 'deca' ? ' active-deca' : '');
+  document.getElementById('btn-hep').className  = 'sport-btn' + (s === 'hep'  ? ' active-hep'  : '');
+  document.getElementById('btnAdd').className   = 'btn-add btn-add-' + s;
+  // update css accent
+  document.documentElement.style.setProperty('--accent', s === 'deca' ? 'var(--deca)' : 'var(--hep)');
+  buildDiscSelect();
+}
+
+function switchTab(t) {
+  ['insert','log','analysis'].forEach(id => {
+    document.getElementById('pane-'+id).classList.toggle('active', id === t);
+    document.getElementById('tab-'+id).classList.toggle('active', id === t);
+  });
+}
+
+// ── Submit ────────────────────────────────────────────────────────────
+async function submitEntry() {
+  const nick = document.getElementById('nickInput').value.trim();
+  if (!nick) { showToast('Inserisci il tuo nick prima!', 'err'); return; }
+
+  const disc = document.getElementById('discSelect').value;
+  const row = {
+    nick,
+    sport,
+    discipline: disc,
+    my_prest:   parseFloat(document.getElementById('my_prest').value)   || null,
+    my_dp:      parseInt(document.getElementById('my_dp').value)        || null,
+    my_atleta:  parseInt(document.getElementById('my_atleta').value)    || null,
+    my_coach:   parseInt(document.getElementById('my_coach').value)     || null,
+    opp_prest:  parseFloat(document.getElementById('opp_prest').value)  || null,
+    opp_dp:     parseInt(document.getElementById('opp_dp').value)       || null,
+    opp_atleta: parseInt(document.getElementById('opp_atleta').value)   || null,
+    opp_coach:  parseInt(document.getElementById('opp_coach').value)    || null,
+  };
+
+  // Validazione minima
+  if (!row.my_dp || !row.opp_dp || !row.my_coach || !row.opp_coach) {
+    showToast('Inserisci almeno DP e Coach per entrambi', 'err');
+    return;
+  }
+
+  const btn = document.getElementById('btnAdd');
+  btn.disabled = true;
+  btn.textContent = 'Salvataggio…';
+
+  const { error } = await db.from('ac_dc_confronto').insert([row]);
+
+  btn.disabled = false;
+  btn.textContent = 'Aggiungi disciplina';
+
+  if (error) {
+    showToast('Errore: ' + error.message, 'err');
+    return;
+  }
+
+  sessionEntries.push({ ...row, created_at: new Date().toISOString() });
+  showToast('✓ ' + disc + ' salvato!', 'ok');
+  clearForm();
+  renderLog();
+
+  // auto-advance to next discipline
+  const list = sport === 'deca' ? DECA : HEP;
+  const sel = document.getElementById('discSelect');
+  const curr = sel.selectedIndex;
+  if (curr < list.length - 1) sel.selectedIndex = curr + 1;
+  updateUnit();
+}
+
+function clearForm() {
+  ['my_prest','my_dp','my_atleta','my_coach','opp_prest','opp_dp','opp_atleta','opp_coach']
+    .forEach(id => document.getElementById(id).value = '');
+}
+
+// ── Session log ───────────────────────────────────────────────────────
+function renderLog() {
+  const el = document.getElementById('sessionLog');
+  if (!sessionEntries.length) {
+    el.innerHTML = '<div class="empty-log">Nessun dato inserito ancora.</div>';
+    return;
+  }
+  el.innerHTML = sessionEntries.slice().reverse().map(e => `
+    <div class="log-entry">
+      <div>
+        <div class="log-disc">${e.discipline}</div>
+        <div class="log-dp">
+          Mio DP: <b>${e.my_dp ?? '—'}</b> | Avv DP: <b>${e.opp_dp ?? '—'}</b>
+          &nbsp;·&nbsp; Coach: ${e.my_coach ?? '—'} vs ${e.opp_coach ?? '—'}
+        </div>
+      </div>
+      <span class="log-sport-badge ${e.sport === 'deca' ? 'badge-deca' : 'badge-hep'}">
+        ${e.sport === 'deca' ? 'D' : 'H'}
+      </span>
+    </div>
+  `).join('');
+}
+
+// ── Analysis ──────────────────────────────────────────────────────────
+async function runAnalysis() {
+  const el = document.getElementById('analysisResult');
+  el.innerHTML = '<div class="no-data">Caricamento dati…</div>';
+
+  const maxDeltaAtleta = parseInt(document.getElementById('filterAtleta').value) || 150;
+  const sportFilter    = document.getElementById('filterSport').value;
+
+  let query = db.from('ac_dc_confronto').select('*');
+  if (sportFilter !== 'all') query = query.eq('sport', sportFilter);
+
+  const { data, error } = await query;
+  if (error) { el.innerHTML = `<div class="no-data">Errore: ${error.message}</div>`; return; }
+  if (!data.length) { el.innerHTML = '<div class="no-data">Nessun dato nel database.</div>'; return; }
+
+  // Estrai tutti i punti (mio + avversario) per disciplina
+  const byDisc = {};
+  for (const row of data) {
+    const d = row.discipline;
+    if (!byDisc[d]) byDisc[d] = { sport: row.sport, points: [] };
+    if (row.my_dp && row.my_atleta && row.my_coach)
+      byDisc[d].points.push({ dp: row.my_dp, atleta: row.my_atleta, coach: row.my_coach });
+    if (row.opp_dp && row.opp_atleta && row.opp_coach)
+      byDisc[d].points.push({ dp: row.opp_dp, atleta: row.opp_atleta, coach: row.opp_coach });
+    // Anche le coppie within-row dirette
+    if (row.my_dp && row.opp_dp && row.my_atleta && row.opp_atleta && row.my_coach && row.opp_coach) {
+      byDisc[d]._within = byDisc[d]._within || [];
+      byDisc[d]._within.push(row);
+    }
+  }
+
+  let html = '';
+  const sortedDiscs = Object.keys(byDisc).sort();
+
+  for (const disc of sortedDiscs) {
+    const { sport: sp, points, _within } = byDisc[disc];
+    const coeffs = [];
+
+    // 1) Coppie within-row (più affidabili: stessa gara)
+    for (const row of (_within || [])) {
+      const dAtl = Math.abs(row.my_atleta - row.opp_atleta);
+      const dCoach = row.my_coach - row.opp_coach;
+      if (dAtl <= maxDeltaAtleta && dCoach !== 0) {
+        const dDP = row.my_dp - row.opp_dp;
+        coeffs.push({ v: (dDP / dCoach) * 200, source: 'W', dAtl, dCoach });
+      }
+    }
+
+    // 2) Coppie cross-row (tra punti diversi)
+    for (let i = 0; i < points.length; i++) {
+      for (let j = i+1; j < points.length; j++) {
+        const a = points[i], b = points[j];
+        const dAtl = Math.abs(a.atleta - b.atleta);
+        const dCoach = a.coach - b.coach;
+        if (dAtl <= maxDeltaAtleta && dCoach !== 0) {
+          const dDP = a.dp - b.dp;
+          coeffs.push({ v: (dDP / dCoach) * 200, source: 'X', dAtl, dCoach });
+        }
+      }
+    }
+
+    if (!coeffs.length) continue;
+
+    const vals = coeffs.map(c => c.v);
+    const avg = vals.reduce((a,b) => a+b, 0) / vals.length;
+    const sorted = [...vals].sort((a,b) => a-b);
+    const med = sorted.length % 2 === 0
+      ? (sorted[sorted.length/2-1] + sorted[sorted.length/2]) / 2
+      : sorted[Math.floor(sorted.length/2)];
+    const wCount = coeffs.filter(c => c.source === 'W').length;
+    const xCount = coeffs.filter(c => c.source === 'X').length;
+
+    const color = sp === 'deca' ? 'var(--deca)' : 'var(--hep)';
+    const badge = sp === 'deca' ? 'badge-deca' : 'badge-hep';
+    const sign  = avg >= 0 ? '+' : '';
+
+    html += `
+      <div class="analysis-disc">
+        <div class="analysis-disc-name">
+          ${disc}
+          <span class="log-sport-badge ${badge}">${sp === 'deca' ? 'D' : 'H'}</span>
+        </div>
+        <div class="coeff-grid">
+          <div class="coeff-cell">
+            <div class="coeff-label">Media DP (Δ+200 coach)</div>
+            <div class="coeff-value" style="color:${color}">${sign}${avg.toFixed(1)}</div>
+          </div>
+          <div class="coeff-cell">
+            <div class="coeff-label">Mediana DP</div>
+            <div class="coeff-value" style="color:${color}">${med >= 0 ? '+' : ''}${med.toFixed(1)}</div>
+          </div>
+          <div class="coeff-cell">
+            <div class="coeff-label">Coppie analizzate</div>
+            <div class="coeff-value" style="color:var(--text)">${coeffs.length}</div>
+          </div>
+        </div>
+        <div class="pairs-info">
+          ${wCount} coppie same-game · ${xCount} cross-game
+          · max Δatleta usato: ${maxDeltaAtleta}
+        </div>
+      </div>
+    `;
+  }
+
+  document.getElementById('analysisResult').innerHTML =
+    html || '<div class="no-data">Nessuna coppia trovata con i parametri selezionati.</div>';
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast ' + type + ' show';
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+</script>
+</body>
+</html>
