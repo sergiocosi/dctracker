@@ -681,20 +681,24 @@ async function runAnalysis() {
   if (error) { el.innerHTML = `<div class="no-data">Errore: ${error.message}</div>`; return; }
   if (!data.length) { el.innerHTML = '<div class="no-data">Nessun dato nel database.</div>'; return; }
 
-  // Estrai tutti i punti (mio + avversario) per disciplina
+  // Estrai punti per disciplina, taggati con nick e row_id per evitare
+  // confronti tra osservazioni dello stesso giocatore (stesso nick = stesso atleta/coach)
   const byDisc = {};
   for (const row of data) {
     const d = row.discipline;
-    if (!byDisc[d]) byDisc[d] = { sport: row.sport, points: [] };
+    if (!byDisc[d]) byDisc[d] = { sport: row.sport, points: [], _within: [] };
+
+    // Punto "mio" taggato con nick del giocatore che ha inserito la riga
     if (row.my_dp && row.my_atleta && row.my_coach)
-      byDisc[d].points.push({ dp: row.my_dp, atleta: row.my_atleta, coach: row.my_coach });
+      byDisc[d].points.push({ dp: row.my_dp, atleta: row.my_atleta, coach: row.my_coach, nick: row.nick, row_id: row.id });
+
+    // Punto "avversario" taggato con nick fittizio univoco (non è un account reale)
     if (row.opp_dp && row.opp_atleta && row.opp_coach)
-      byDisc[d].points.push({ dp: row.opp_dp, atleta: row.opp_atleta, coach: row.opp_coach });
-    // Anche le coppie within-row dirette
-    if (row.my_dp && row.opp_dp && row.my_atleta && row.opp_atleta && row.my_coach && row.opp_coach) {
-      byDisc[d]._within = byDisc[d]._within || [];
+      byDisc[d].points.push({ dp: row.opp_dp, atleta: row.opp_atleta, coach: row.opp_coach, nick: '__opp__' + row.id, row_id: row.id });
+
+    // Coppie same-game (le più affidabili: stessa gara, condizioni identiche)
+    if (row.my_dp && row.opp_dp && row.my_atleta && row.opp_atleta && row.my_coach && row.opp_coach)
       byDisc[d]._within.push(row);
-    }
   }
 
   let html = '';
@@ -704,8 +708,8 @@ async function runAnalysis() {
     const { sport: sp, points, _within } = byDisc[disc];
     const coeffs = [];
 
-    // 1) Coppie within-row (più affidabili: stessa gara)
-    for (const row of (_within || [])) {
+    // 1) Coppie same-game W: io vs avversario nella stessa riga — massima affidabilità
+    for (const row of _within) {
       const dAtl = Math.abs(row.my_atleta - row.opp_atleta);
       const dCoach = row.my_coach - row.opp_coach;
       if (dAtl <= maxDeltaAtleta && dCoach !== 0) {
@@ -714,10 +718,13 @@ async function runAnalysis() {
       }
     }
 
-    // 2) Coppie cross-row (tra punti diversi)
+    // 2) Coppie cross-game X: solo tra nick diversi e row_id diverso
+    // Evita confronti tra osservazioni dello stesso giocatore (stesso nick = stesso atleta/coach fisso)
     for (let i = 0; i < points.length; i++) {
-      for (let j = i+1; j < points.length; j++) {
+      for (let j = i + 1; j < points.length; j++) {
         const a = points[i], b = points[j];
+        // Salta se stesso nick o stessa riga (già coperta da W)
+        if (a.nick === b.nick || a.row_id === b.row_id) continue;
         const dAtl = Math.abs(a.atleta - b.atleta);
         const dCoach = a.coach - b.coach;
         if (dAtl <= maxDeltaAtleta && dCoach !== 0) {
