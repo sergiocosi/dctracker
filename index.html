@@ -505,7 +505,7 @@
 
         <!-- OPP data -->
         <div class="form-col col-opp">
-          <div class="form-col-header">Avversario</div>
+          <div class="form-col-header">Avversario <span style="font-size:9px;font-weight:400;color:var(--text-dim)">(facoltativo)</span></div>
           <div class="field">
             <label>Prestazione</label>
             <input type="number" step="any" id="opp_prest" placeholder="es. 10.45">
@@ -525,6 +525,10 @@
         </div>
       </div>
 
+      <div style="font-size:11px;color:var(--text-dim);margin-bottom:10px;line-height:1.6">
+        💡 Se l'avversario non ha giocato, <b>salta direttamente</b> alla disciplina successiva —
+        senza prestazione i suoi dati non sono utili all'analisi.
+      </div>
       <button class="btn-add btn-add-deca" id="btnAdd" onclick="submitEntry()">
         Aggiungi disciplina
       </button>
@@ -667,9 +671,9 @@ async function submitEntry() {
     opp_coach:  parseInt(document.getElementById('opp_coach').value)    || null,
   };
 
-  // Validazione minima
-  if (!row.my_dp || !row.opp_dp || !row.my_coach || !row.opp_coach) {
-    showToast('Inserisci almeno DP e Coach per entrambi', 'err');
+  // Validazione: obbligatori solo i miei dati (DP + Coach)
+  if (!row.my_dp || !row.my_coach) {
+    showToast('Inserisci almeno i tuoi DP e Allenatore', 'err');
     return;
   }
 
