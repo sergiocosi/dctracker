@@ -413,6 +413,42 @@
     color: var(--text-dim);
     padding: 8px 0;
   }
+  .analysis-explainer {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.75;
+  }
+  .analysis-explainer b { color: var(--text); }
+  .paradox-toggle {
+    width: 100%;
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    color: var(--text-muted);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 10px 14px;
+    cursor: pointer;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 20px;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .paradox-toggle:hover { border-color: var(--red); color: var(--text); }
+  .paradox-count {
+    display: inline-block;
+    background: rgba(231,76,60,0.15);
+    color: var(--red);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 4px;
+    margin-left: auto;
+  }
+  .paradox-body { display: none; margin-top: 10px; }
+  .paradox-body.open { display: block; }
 
   .filter-row {
     display: flex;
@@ -546,6 +582,21 @@
 
   <!-- ═══ ANALYSIS TAB ═══ -->
   <div class="tab-content" id="pane-analysis">
+
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-title">ℹ️ Come funziona</div>
+      <div class="analysis-explainer">
+        L'analisi cerca <b>coppie comparabili</b>: due osservazioni dove la differenza di Atleta
+        è piccola (≤ Max Δ atleta) ma il Coach è diverso di almeno 1 punto.<br>
+        Per ogni coppia calcola: <b>se Δcoach fosse +200, quanti DP in più si prenderebbero?</b><br>
+        Media e mediana di questo valore per disciplina stimano il coefficiente reale dell'allenatore.<br>
+        <span style="font-size:11px;margin-top:4px;display:block">
+          ⚡ <b>Same-game</b> = io vs avversario nello stesso match (più affidabile) &nbsp;·&nbsp;
+          ✕ <b>Cross-game</b> = confronto tra match diversi
+        </span>
+      </div>
+    </div>
+
     <div class="card">
       <div class="card-title">Parametri</div>
       <div class="filter-row">
@@ -875,16 +926,22 @@ async function runAnalysis() {
     `;
   }
 
-  // ── Sezione paradossi ──────────────────────────────────────────────
-  let paradoxHtml = '<div class="paradox-section">';
-  paradoxHtml += '<div class="paradox-title">⚡ Paradossi — somma a favore ma DP contro</div>';
+  // ── Dedup paradossi per contenuto (evita doppioni da righe duplicate nel db) ──
+  const seenPdx = new Set();
+  const uniqueParadoxes = paradoxes.filter(p => {
+    const key = `${p.disc}|${p.loserAtl}|${p.loserCoach}|${p.loserDP}|${p.winnerAtl}|${p.winnerCoach}|${p.winnerDP}`;
+    if (seenPdx.has(key)) return false;
+    seenPdx.add(key);
+    return true;
+  });
 
-  if (paradoxes.length === 0) {
-    paradoxHtml += '<div class="paradox-empty">Nessun paradosso trovato con i parametri attuali.</div>';
+  // ── Sezione paradossi (collassabile) ───────────────────────────────
+  let paradoxInner = '';
+  if (uniqueParadoxes.length === 0) {
+    paradoxInner = '<div class="paradox-empty">Nessun paradosso trovato con i parametri attuali.</div>';
   } else {
-    // Raggruppa per disciplina
     const byDiscp = {};
-    for (const p of paradoxes) {
+    for (const p of uniqueParadoxes) {
       if (!byDiscp[p.disc]) byDiscp[p.disc] = [];
       byDiscp[p.disc].push(p);
     }
@@ -893,9 +950,9 @@ async function runAnalysis() {
       const label = ps[0].sport === 'deca' ? 'D' : 'H';
       for (const p of ps) {
         const ratioTxt = p.ratio !== null
-          ? `k_coach/k_atleta > <b>${p.ratio}</b> (coach vale almeno ${p.ratio}× l'atleta)`
-          : 'rapporto non calcolabile';
-        paradoxHtml += `
+          ? `Coach vale almeno <b>${p.ratio}×</b> un punto di atleta (su questa disciplina)`
+          : `Paradosso invertito: chi ha meno atleta <i>e</i> meno coach vince comunque`;
+        paradoxInner += `
           <div class="paradox-card">
             <div class="paradox-disc">
               ${disc} <span class="log-sport-badge ${badge}">${label}</span>
@@ -917,32 +974,42 @@ async function runAnalysis() {
                 DP: <b style="color:var(--green)">${p.winnerDP}</b>
               </div>
             </div>
-            <div class="paradox-constraint">→ ${ratioTxt}</div>
+            <div class="paradox-constraint" style="color:var(--text-muted)">→ ${ratioTxt}</div>
           </div>`;
       }
     }
-    // Stima aggregata del rapporto minimo
-    const ratios = paradoxes.filter(p => p.ratio !== null).map(p => parseFloat(p.ratio));
+    const ratios = uniqueParadoxes.filter(p => p.ratio !== null).map(p => parseFloat(p.ratio));
     if (ratios.length > 0) {
       const maxRatio = Math.max(...ratios).toFixed(2);
       const medRatio = (ratios.sort((a,b)=>a-b)[Math.floor(ratios.length/2)]).toFixed(2);
-      paradoxHtml += `
+      paradoxInner += `
         <div class="paradox-card" style="background:rgba(46,204,113,0.07);border-color:rgba(46,204,113,0.3);margin-top:12px">
-          <div style="font-weight:600;margin-bottom:6px">📊 Sintesi dai ${paradoxes.length} paradossi</div>
+          <div style="font-weight:600;margin-bottom:6px">📊 Sintesi dai ${uniqueParadoxes.length} paradossi</div>
           <div style="font-size:13px;line-height:1.8">
-            Vincolo più stretto: k_coach/k_atleta > <b>${maxRatio}</b><br>
-            Mediana dei vincoli: k_coach/k_atleta > <b>${medRatio}</b><br>
-            <span style="color:var(--text-muted);font-size:12px">
-              In pratica: 1 punto di coach vale almeno ${maxRatio}× un punto di atleta sulla disciplina peggiore.
-            </span>
+            Vincolo più stretto: coach vale almeno <b>${maxRatio}×</b> l'atleta<br>
+            Mediana dei vincoli: <b>${medRatio}×</b>
           </div>
         </div>`;
     }
   }
-  paradoxHtml += '</div>';
+
+  const paradoxHtml = `
+    <button class="paradox-toggle" onclick="toggleParadoxes(this)">
+      ⚡ Paradossi — somma a favore ma DP contro
+      <span class="paradox-count">${uniqueParadoxes.length}</span>
+    </button>
+    <div class="paradox-body">${paradoxInner}</div>
+  `;
 
   document.getElementById('analysisResult').innerHTML =
     (html || '<div class="no-data">Nessuna coppia trovata con i parametri attuali.</div>') + paradoxHtml;
+}
+
+function toggleParadoxes(btn) {
+  const body = btn.nextElementSibling;
+  body.classList.toggle('open');
+  btn.style.borderColor = body.classList.contains('open') ? 'var(--red)' : '';
+  btn.style.color = body.classList.contains('open') ? 'var(--red)' : '';
 }
 
 // ── Toast ─────────────────────────────────────────────────────────────
