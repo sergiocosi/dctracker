@@ -7,21 +7,21 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root {
-    --deca: #e07b39;
+    --deca: #d96f2a;
     --deca-light: #fdf0e6;
     --deca-dark: #b35e20;
-    --hep: #1a9e8f;
+    --hep: #169e8f;
     --hep-light: #e4f6f4;
-    --hep-dark: #137068;
-    --bg: #0f1117;
-    --surface: #1a1d25;
-    --surface2: #22263a;
-    --border: #2e3348;
-    --text: #e8eaf0;
-    --text-muted: #8892a4;
-    --text-dim: #4a5268;
-    --green: #2ecc71;
-    --red: #e74c3c;
+    --hep-dark: #0f7068;
+    --bg: #f5f0ea;
+    --surface: #ffffff;
+    --surface2: #ede7df;
+    --border: #d8cfc6;
+    --text: #1e1a16;
+    --text-muted: #6b5f54;
+    --text-dim: #a89080;
+    --green: #1a8f58;
+    --red: #c0392b;
     --accent: var(--deca);
     --accent-light: var(--deca-light);
   }
@@ -270,7 +270,7 @@
     z-index: 999;
     transition: transform 0.3s ease;
     white-space: nowrap;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.10);
   }
   .toast.show { transform: translateX(-50%) translateY(0); }
   .toast.ok   { border-left: 3px solid var(--green); }
@@ -450,6 +450,51 @@
   .paradox-body { display: none; margin-top: 10px; }
   .paradox-body.open { display: block; }
 
+  .pure-box {
+    background: rgba(26,143,88,0.07);
+    border: 1px solid rgba(26,143,88,0.28);
+    border-radius: 9px;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+  }
+  .pure-box-title {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--green);
+    margin-bottom: 6px;
+  }
+  .pure-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 6px;
+  }
+  .pure-cell {
+    text-align: center;
+  }
+  .pure-value {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--green);
+    font-variant-numeric: tabular-nums;
+  }
+  .pure-label {
+    font-size: 10px;
+    color: var(--text-muted);
+  }
+  .pure-badge {
+    display: inline-block;
+    background: rgba(26,143,88,0.15);
+    color: var(--green);
+    font-size: 10px;
+    font-weight: 700;
+    padding: 1px 5px;
+    border-radius: 3px;
+    margin-left: 4px;
+    vertical-align: middle;
+  }
+
   .filter-row {
     display: flex;
     gap: 8px;
@@ -498,6 +543,23 @@
 
   <!-- ═══ INSERT TAB ═══ -->
   <div class="tab-content active" id="pane-insert">
+
+    <!-- Intro card -->
+    <div class="card" style="margin-bottom:14px;border-left:3px solid var(--deca)">
+      <div class="card-title">🎯 Come si usa</div>
+      <div class="analysis-explainer">
+        Dopo ogni partita del Daily Challenge, inserisci i dati di ogni disciplina giocata —
+        i tuoi e quelli dell'avversario.<br>
+        <b>La colonna avversario è facoltativa</b> ma preziosa: più dati raccogliamo,
+        più precisa diventa la stima del coefficiente allenatore.<br>
+        <span style="font-size:11px;margin-top:4px;display:block">
+          ✅ Dopo ogni salvataggio il menu <b>avanza da solo</b> alla disciplina successiva —
+          puoi inserire una gara intera senza toccare il selettore.<br>
+          ⏭ Se una disciplina manca (avversario assente o dati non disponibili),
+          cambia disciplina manualmente e continua.
+        </span>
+      </div>
+    </div>
 
     <!-- Sport toggle -->
     <div class="sport-toggle">
@@ -561,9 +623,9 @@
         </div>
       </div>
 
-      <div style="font-size:11px;color:var(--text-dim);margin-bottom:10px;line-height:1.6">
-        💡 Se l'avversario non ha giocato, <b>salta direttamente</b> alla disciplina successiva —
-        senza prestazione i suoi dati non sono utili all'analisi.
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;line-height:1.7;background:var(--surface2);border-radius:8px;padding:9px 12px">
+        💡 I dati dell'avversario servono all'analisi solo se hai <b>almeno Atleta, Allenatore e DP</b>.
+        Se non li hai, lascia vuoto e premi comunque Aggiungi — i tuoi dati vengono salvati ugualmente.
       </div>
       <button class="btn-add btn-add-deca" id="btnAdd" onclick="submitEntry()">
         Aggiungi disciplina
@@ -574,6 +636,13 @@
 
   <!-- ═══ LOG TAB ═══ -->
   <div class="tab-content" id="pane-log">
+    <div class="card" style="margin-bottom:14px;border-left:3px solid var(--text-dim)">
+      <div class="analysis-explainer" style="font-size:12px">
+        📋 Qui trovi tutto quello che hai inserito <b>in questa sessione</b>.
+        I dati sono già stati salvati nel database — questo log è solo un promemoria visivo
+        e si azzera alla chiusura della pagina.
+      </div>
+    </div>
     <div class="card">
       <div class="card-title">Inseriti in questa sessione</div>
       <div id="sessionLog"><div class="empty-log">Nessun dato inserito ancora.</div></div>
@@ -610,6 +679,12 @@
           <option value="deca">Solo Decathlon</option>
           <option value="hep">Solo Heptathlon</option>
         </select>
+      </div>
+      <div class="filter-row">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--text-muted)">
+          <input type="checkbox" id="filterPureOnly" style="width:15px;height:15px;accent-color:var(--green)">
+          Solo casi puri <span class="pure-badge">P</span> <span style="font-size:11px">(Δatleta = 0)</span>
+        </label>
       </div>
       <button class="btn-add btn-add-deca" style="margin-top:8px" onclick="runAnalysis()">
         Aggiorna analisi
@@ -790,6 +865,7 @@ async function runAnalysis() {
 
   const maxDeltaAtleta = parseInt(document.getElementById('filterAtleta').value) || 150;
   const sportFilter    = document.getElementById('filterSport').value;
+  const pureOnly       = document.getElementById('filterPureOnly').checked;
 
   let query = db.from('ac_dc_confronto').select('*');
   if (sportFilter !== 'all') query = query.eq('sport', sportFilter);
@@ -798,14 +874,9 @@ async function runAnalysis() {
   if (error) { el.innerHTML = `<div class="no-data">Errore: ${error.message}</div>`; return; }
   if (!data.length) { el.innerHTML = '<div class="no-data">Nessun dato nel database.</div>'; return; }
 
-  // Paradossi: coppie same-game dove la somma atleta+coach favorisce il perdente
-  // Sono i casi più informativi: ogni paradosso dà un limite minimo di k_coach/k_atleta
   const paradoxes = [];
 
-  // byDisc: raccoglie tutti i punti (miei + avversari) per ogni disciplina,
-  // ciascuno identificato da row_id + side per non confrontare un punto con se stesso.
-  // Same-game W = io vs avversario nella stessa riga (più affidabile).
-  // Cross-game X = qualsiasi coppia di righe diverse con atleta simile e coach diverso.
+  // byDisc: raccoglie punti (miei + avversari) e righe complete per disciplina
   const byDisc = {};
   for (const row of data) {
     const d = row.discipline;
@@ -826,107 +897,149 @@ async function runAnalysis() {
 
   for (const disc of sortedDiscs) {
     const { sport: sp, points, _within } = byDisc[disc];
-    const coeffs = [];
-    const seenW = new Set();  // uid pairs già coperti da W, evitiamo doppioni in X
+    const coeffs = [];      // tutti i coefficienti (W, WP, X, XP)
+    const seenW  = new Set();
 
-    // 1) Same-game W: stesso match, condizioni identiche — massima affidabilità
+    // ── 1) Same-game (W / WP) ────────────────────────────────────────
     for (const row of _within) {
-      const dAtl = Math.abs(row.my_atleta - row.opp_atleta);
+      const dAtl   = Math.abs(row.my_atleta - row.opp_atleta);
       const dCoach = row.my_coach - row.opp_coach;
       if (dAtl <= maxDeltaAtleta && dCoach !== 0) {
-        const dDP = row.my_dp - row.opp_dp;
-        coeffs.push({ v: (dDP / dCoach) * 200, source: 'W', dAtl, dCoach });
+        const dDP  = row.my_dp - row.opp_dp;
+        const isPure = dAtl === 0;
+        // se pureOnly, saltiamo i non-puri
+        if (!pureOnly || isPure) {
+          coeffs.push({ v: (dDP / dCoach) * 200, source: isPure ? 'WP' : 'W', dAtl, dCoach });
+        }
         seenW.add(row.id + '_my|' + row.id + '_opp');
 
         // Paradosso: somma atleta+coach favorisce un lato ma i DP favoriscono l'altro
-        const mySum  = (row.my_atleta  || 0) + (row.my_coach  || 0);
-        const oppSum = (row.opp_atleta || 0) + (row.opp_coach || 0);
+        const mySum  = row.my_atleta  + row.my_coach;
+        const oppSum = row.opp_atleta + row.opp_coach;
         const myWins  = row.my_dp  > row.opp_dp;
         const oppWins = row.opp_dp > row.my_dp;
         const isParadox = (mySum > oppSum && oppWins) || (oppSum > mySum && myWins);
         if (isParadox) {
-          // Chi ha la somma più alta ma perde?
-          const loserAtl   = mySum > oppSum ? row.my_atleta  : row.opp_atleta;
-          const loserCoach = mySum > oppSum ? row.my_coach   : row.opp_coach;
-          const loserDP    = mySum > oppSum ? row.my_dp      : row.opp_dp;
-          const winnerAtl  = mySum > oppSum ? row.opp_atleta : row.my_atleta;
-          const winnerCoach= mySum > oppSum ? row.opp_coach  : row.my_coach;
-          const winnerDP   = mySum > oppSum ? row.opp_dp     : row.my_dp;
-          // Vincolo: (winnerAtl-loserAtl)*k_atl + (winnerCoach-loserCoach)*k_coach > 0
-          // se winnerCoach > loserCoach → k_coach/k_atl > (loserAtl-winnerAtl)/(winnerCoach-loserCoach)
-          const dA = loserAtl - winnerAtl;   // atleta extra del perdente
-          const dC = winnerCoach - loserCoach; // coach extra del vincitore
+          const loserSide  = mySum > oppSum ? 'my'  : 'opp';
+          const loserAtl   = row[loserSide  === 'my' ? 'my_atleta'  : 'opp_atleta'];
+          const loserCoach = row[loserSide  === 'my' ? 'my_coach'   : 'opp_coach'];
+          const loserDP    = row[loserSide  === 'my' ? 'my_dp'      : 'opp_dp'];
+          const winnerAtl  = row[loserSide  === 'my' ? 'opp_atleta' : 'my_atleta'];
+          const winnerCoach= row[loserSide  === 'my' ? 'opp_coach'  : 'my_coach'];
+          const winnerDP   = row[loserSide  === 'my' ? 'opp_dp'     : 'my_dp'];
+          const dA = loserAtl - winnerAtl;
+          const dC = winnerCoach - loserCoach;
           const ratio = dC > 0 ? (dA / dC).toFixed(2) : null;
           paradoxes.push({
-            disc, sport: sp,
+            disc, sport: sp, isPure,
             loserAtl, loserCoach, loserDP,
             winnerAtl, winnerCoach, winnerDP,
             dAtl, dCoach: Math.abs(dCoach), dDP: Math.abs(dDP),
-            ratio, date: row.created_at
+            ratio
           });
         }
       }
     }
 
-    // 2) Cross-game X: tutte le coppie di righe diverse
-    // Filtra: atleta simile, coach diverso, non già coperta da W
+    // ── 2) Cross-game (X / XP) ───────────────────────────────────────
     for (let i = 0; i < points.length; i++) {
       for (let j = i + 1; j < points.length; j++) {
         const a = points[i], b = points[j];
         if (seenW.has(a.uid + '|' + b.uid) || seenW.has(b.uid + '|' + a.uid)) continue;
-        const dAtl = Math.abs(a.atleta - b.atleta);
+        const dAtl   = Math.abs(a.atleta - b.atleta);
         const dCoach = a.coach - b.coach;
         if (dAtl <= maxDeltaAtleta && dCoach !== 0) {
-          const dDP = a.dp - b.dp;
-          coeffs.push({ v: (dDP / dCoach) * 200, source: 'X', dAtl, dCoach });
+          const isPure = dAtl === 0;
+          if (!pureOnly || isPure) {
+            const dDP = a.dp - b.dp;
+            coeffs.push({ v: (dDP / dCoach) * 200, source: isPure ? 'XP' : 'X', dAtl, dCoach });
+          }
         }
       }
     }
 
     if (!coeffs.length) continue;
 
-    const vals = coeffs.map(c => c.v);
-    const avg = vals.reduce((a,b) => a+b, 0) / vals.length;
+    // ── Statistiche generali ─────────────────────────────────────────
+    const vals   = coeffs.map(c => c.v);
+    const avg    = vals.reduce((a,b) => a+b, 0) / vals.length;
     const sorted = [...vals].sort((a,b) => a-b);
-    const med = sorted.length % 2 === 0
+    const med    = sorted.length % 2 === 0
       ? (sorted[sorted.length/2-1] + sorted[sorted.length/2]) / 2
       : sorted[Math.floor(sorted.length/2)];
-    const wCount = coeffs.filter(c => c.source === 'W').length;
-    const xCount = coeffs.filter(c => c.source === 'X').length;
+
+    const wpCount = coeffs.filter(c => c.source === 'WP').length;
+    const wCount  = coeffs.filter(c => c.source === 'W').length;
+    const xpCount = coeffs.filter(c => c.source === 'XP').length;
+    const xCount  = coeffs.filter(c => c.source === 'X').length;
+
+    // ── Statistiche casi puri ────────────────────────────────────────
+    const pureCoeffs = coeffs.filter(c => c.source === 'WP' || c.source === 'XP');
+    let pureHtml = '';
+    if (pureCoeffs.length >= 1) {
+      const pVals   = pureCoeffs.map(c => c.v);
+      const pAvg    = pVals.reduce((a,b) => a+b, 0) / pVals.length;
+      const pSorted = [...pVals].sort((a,b) => a-b);
+      const pMed    = pSorted.length % 2 === 0
+        ? (pSorted[pSorted.length/2-1] + pSorted[pSorted.length/2]) / 2
+        : pSorted[Math.floor(pSorted.length/2)];
+      pureHtml = `
+        <div class="pure-box">
+          <div class="pure-box-title">📌 Stima pura — Δatleta = 0 <span class="pure-badge">P</span></div>
+          <div class="pure-grid">
+            <div class="pure-cell">
+              <div class="pure-label">Media DP (Δ+200 coach)</div>
+              <div class="pure-value">${pAvg >= 0 ? '+' : ''}${pAvg.toFixed(1)}</div>
+            </div>
+            <div class="pure-cell">
+              <div class="pure-label">Mediana DP</div>
+              <div class="pure-value">${pMed >= 0 ? '+' : ''}${pMed.toFixed(1)}</div>
+            </div>
+            <div class="pure-cell">
+              <div class="pure-label">Osservazioni pure</div>
+              <div class="pure-value">${pureCoeffs.length}</div>
+            </div>
+          </div>
+          <div class="pairs-info" style="margin-top:4px">
+            ${wpCount} same-game · ${xpCount} cross-game
+          </div>
+        </div>`;
+    }
 
     const color = sp === 'deca' ? 'var(--deca)' : 'var(--hep)';
     const badge = sp === 'deca' ? 'badge-deca' : 'badge-hep';
-    const sign  = avg >= 0 ? '+' : '';
 
     html += `
       <div class="analysis-disc">
         <div class="analysis-disc-name">
           ${disc}
           <span class="log-sport-badge ${badge}">${sp === 'deca' ? 'D' : 'H'}</span>
+          ${pureCoeffs.length ? '<span class="pure-badge">P</span>' : ''}
         </div>
+        ${pureHtml}
         <div class="coeff-grid">
           <div class="coeff-cell">
-            <div class="coeff-label">Media DP (Δ+200 coach)</div>
-            <div class="coeff-value" style="color:${color}">${sign}${avg.toFixed(1)}</div>
+            <div class="coeff-label">Media DP (tutti)</div>
+            <div class="coeff-value" style="color:${color}">${avg >= 0 ? '+' : ''}${avg.toFixed(1)}</div>
           </div>
           <div class="coeff-cell">
             <div class="coeff-label">Mediana DP</div>
             <div class="coeff-value" style="color:${color}">${med >= 0 ? '+' : ''}${med.toFixed(1)}</div>
           </div>
           <div class="coeff-cell">
-            <div class="coeff-label">Coppie analizzate</div>
+            <div class="coeff-label">Coppie totali</div>
             <div class="coeff-value" style="color:var(--text)">${coeffs.length}</div>
           </div>
         </div>
         <div class="pairs-info">
-          ${wCount} coppie same-game · ${xCount} cross-game
-          · max Δatleta usato: ${maxDeltaAtleta}
+          ${wpCount ? `<b>${wpCount} WP</b> · ` : ''}${wCount} W · ${xpCount ? `<b>${xpCount} XP</b> · ` : ''}${xCount} X
+          · max Δatleta: ${maxDeltaAtleta}
         </div>
       </div>
     `;
   }
 
-  // ── Dedup paradossi per contenuto (evita doppioni da righe duplicate nel db) ──
+  // ── Dedup e sezione paradossi ────────────────────────────────────────
   const seenPdx = new Set();
   const uniqueParadoxes = paradoxes.filter(p => {
     const key = `${p.disc}|${p.loserAtl}|${p.loserCoach}|${p.loserDP}|${p.winnerAtl}|${p.winnerCoach}|${p.winnerDP}`;
@@ -935,13 +1048,14 @@ async function runAnalysis() {
     return true;
   });
 
-  // ── Sezione paradossi (collassabile) ───────────────────────────────
   let paradoxInner = '';
   if (uniqueParadoxes.length === 0) {
     paradoxInner = '<div class="paradox-empty">Nessun paradosso trovato con i parametri attuali.</div>';
   } else {
+    // Puri prima
+    const sorted = [...uniqueParadoxes].sort((a,b) => (b.isPure ? 1 : 0) - (a.isPure ? 1 : 0));
     const byDiscp = {};
-    for (const p of uniqueParadoxes) {
+    for (const p of sorted) {
       if (!byDiscp[p.disc]) byDiscp[p.disc] = [];
       byDiscp[p.disc].push(p);
     }
@@ -949,28 +1063,27 @@ async function runAnalysis() {
       const badge = ps[0].sport === 'deca' ? 'badge-deca' : 'badge-hep';
       const label = ps[0].sport === 'deca' ? 'D' : 'H';
       for (const p of ps) {
+        const pureMark = p.isPure ? ' <span class="pure-badge">P — ATLETA IDENTICO!</span>' : '';
         const ratioTxt = p.ratio !== null
-          ? `Coach vale almeno <b>${p.ratio}×</b> un punto di atleta (su questa disciplina)`
+          ? `Coach vale almeno <b>${p.ratio}×</b> un punto di atleta`
           : `Paradosso invertito: chi ha meno atleta <i>e</i> meno coach vince comunque`;
         paradoxInner += `
-          <div class="paradox-card">
+          <div class="paradox-card" ${p.isPure ? 'style="border-color:rgba(46,204,113,0.5)"' : ''}>
             <div class="paradox-disc">
-              ${disc} <span class="log-sport-badge ${badge}">${label}</span>
-              <span style="font-size:11px;color:var(--text-muted);font-weight:400">
+              ${disc} <span class="log-sport-badge ${badge}">${label}</span>${pureMark}
+              <span style="font-size:11px;color:var(--text-muted);font-weight:400;margin-left:4px">
                 Δatleta=${p.dAtl} · Δcoach=${p.dCoach} · ΔDP=${p.dDP}
               </span>
             </div>
             <div class="paradox-row">
               <div class="paradox-side">
                 <div class="ps-label">⚡ somma più alta ma PERDE</div>
-                Atleta <b>${p.loserAtl}</b> + Coach <b>${p.loserCoach}</b>
-                = ${p.loserAtl + p.loserCoach}<br>
+                Atleta <b>${p.loserAtl}</b> + Coach <b>${p.loserCoach}</b> = ${p.loserAtl + p.loserCoach}<br>
                 DP: <b style="color:var(--red)">${p.loserDP}</b>
               </div>
               <div class="paradox-side">
                 <div class="ps-label">✓ somma più bassa ma VINCE</div>
-                Atleta <b>${p.winnerAtl}</b> + Coach <b>${p.winnerCoach}</b>
-                = ${p.winnerAtl + p.winnerCoach}<br>
+                Atleta <b>${p.winnerAtl}</b> + Coach <b>${p.winnerCoach}</b> = ${p.winnerAtl + p.winnerCoach}<br>
                 DP: <b style="color:var(--green)">${p.winnerDP}</b>
               </div>
             </div>
@@ -982,9 +1095,10 @@ async function runAnalysis() {
     if (ratios.length > 0) {
       const maxRatio = Math.max(...ratios).toFixed(2);
       const medRatio = (ratios.sort((a,b)=>a-b)[Math.floor(ratios.length/2)]).toFixed(2);
+      const pureCount = uniqueParadoxes.filter(p => p.isPure).length;
       paradoxInner += `
         <div class="paradox-card" style="background:rgba(46,204,113,0.07);border-color:rgba(46,204,113,0.3);margin-top:12px">
-          <div style="font-weight:600;margin-bottom:6px">📊 Sintesi dai ${uniqueParadoxes.length} paradossi</div>
+          <div style="font-weight:600;margin-bottom:6px">📊 Sintesi dai ${uniqueParadoxes.length} paradossi${pureCount ? ` (di cui ${pureCount} puri <span class="pure-badge">P</span>)` : ''}</div>
           <div style="font-size:13px;line-height:1.8">
             Vincolo più stretto: coach vale almeno <b>${maxRatio}×</b> l'atleta<br>
             Mediana dei vincoli: <b>${medRatio}×</b>
