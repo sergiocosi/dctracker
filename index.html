@@ -483,6 +483,36 @@
     font-size: 10px;
     color: var(--text-muted);
   }
+
+  /* ── Import table ── */
+  .import-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    overflow-x: auto;
+    display: block;
+  }
+  .import-table th {
+    background: var(--surface2);
+    color: var(--text-muted);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 6px 8px;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  .import-table td {
+    padding: 5px 8px;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+    font-variant-numeric: tabular-nums;
+  }
+  .import-table tr:last-child td { border-bottom: none; }
+  .import-table td:first-child { text-align: left; font-weight: 600; color: var(--accent); }
+  .import-table .col-my { background: rgba(217,111,42,0.04); }
+  .import-table .col-opp { background: rgba(22,158,143,0.04); }
   .pure-badge {
     display: inline-block;
     background: rgba(26,143,88,0.15);
@@ -535,6 +565,7 @@
 <!-- Nav -->
 <div class="nav">
   <button class="nav-btn active" onclick="switchTab('insert')" id="tab-insert">➕ Inserisci</button>
+  <button class="nav-btn" onclick="switchTab('import')" id="tab-import">📥 Importa</button>
   <button class="nav-btn" onclick="switchTab('log')" id="tab-log">📋 Sessione</button>
   <button class="nav-btn" onclick="switchTab('analysis')" id="tab-analysis">📊 Analisi</button>
 </div>
@@ -630,6 +661,57 @@
       <button class="btn-add btn-add-deca" id="btnAdd" onclick="submitEntry()">
         Aggiungi disciplina
       </button>
+    </div>
+
+  </div>
+
+  <!-- ═══ IMPORT TAB ═══ -->
+  <div class="tab-content" id="pane-import">
+
+    <div class="card" style="margin-bottom:14px;border-left:3px solid var(--deca)">
+      <div class="card-title">📥 Importa gara completa</div>
+      <div class="analysis-explainer">
+        Incolla qui la riga grezza copiata dal foglio Excel (o dall'app).
+        Il parser riconosce automaticamente l'ordine dei valori per Deca e Hep.<br>
+        <span style="font-size:11px;margin-top:4px;display:block">
+          ✅ Controlla l'anteprima prima di salvare — puoi correggere eventuali errori.<br>
+          🚀 Il salvataggio inserisce tutte le righe direttamente nel database.
+        </span>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:12px">
+      <div class="filter-row" style="margin-bottom:10px">
+        <span class="filter-label">Sport</span>
+        <select class="filter-input" id="importSport">
+          <option value="deca">Decathlon</option>
+          <option value="hep">Heptathlon</option>
+        </select>
+      </div>
+      <div class="filter-row" style="margin-bottom:14px">
+        <span class="filter-label">Nick</span>
+        <input class="filter-input" type="text" id="importNick" placeholder="il tuo nick">
+      </div>
+      <textarea id="importRaw" placeholder="Incolla qui la riga dati grezza..." style="
+        width:100%;min-height:90px;background:var(--surface2);border:1px solid var(--border);
+        border-radius:8px;padding:10px 12px;color:var(--text);font-size:12px;font-family:monospace;
+        resize:vertical;line-height:1.5
+      "></textarea>
+      <button onclick="parseImport()" style="
+        margin-top:10px;width:100%;padding:11px;border-radius:9px;border:none;cursor:pointer;
+        background:var(--deca);color:#fff;font-size:14px;font-weight:700
+      ">🔍 Analizza</button>
+    </div>
+
+    <div id="importPreview" style="display:none">
+      <div class="card" style="margin-bottom:12px">
+        <div class="card-title" style="margin-bottom:10px">Anteprima — <span id="importCount"></span> righe</div>
+        <div id="importTable"></div>
+        <button onclick="saveImport()" id="btnSaveImport" style="
+          margin-top:14px;width:100%;padding:11px;border-radius:9px;border:none;cursor:pointer;
+          background:var(--green);color:#fff;font-size:14px;font-weight:700
+        ">🚀 Salva tutto nel database</button>
+      </div>
     </div>
 
   </div>
@@ -771,10 +853,15 @@ function setSport(s) {
 }
 
 function switchTab(t) {
-  ['insert','log','analysis'].forEach(id => {
+  ['insert','import','log','analysis'].forEach(id => {
     document.getElementById('pane-'+id).classList.toggle('active', id === t);
     document.getElementById('tab-'+id).classList.toggle('active', id === t);
   });
+  // Sync nick into import tab
+  if (t === 'import') {
+    const nick = document.getElementById('nickInput').value.trim();
+    if (nick) document.getElementById('importNick').value = nick;
+  }
 }
 
 // ── Submit ────────────────────────────────────────────────────────────
@@ -1124,6 +1211,116 @@ function toggleParadoxes(btn) {
   body.classList.toggle('open');
   btn.style.borderColor = body.classList.contains('open') ? 'var(--red)' : '';
   btn.style.color = body.classList.contains('open') ? 'var(--red)' : '';
+}
+
+// ── Import ────────────────────────────────────────────────────────────
+const DECA_DISCS = ['100m','Lungo','Peso','Alto','400m','110hs','Disco','Asta','Giavellotto','1500m'];
+const HEP_DISCS  = ['100hs','Alto','Peso','200m','Lungo','Giavellotto','800m'];
+
+let importRows = [];
+
+function parseImport() {
+  const raw   = document.getElementById('importRaw').value.trim();
+  const sport = document.getElementById('importSport').value;
+  const nick  = document.getElementById('importNick').value.trim() || 'SergioCosi';
+  const discs = sport === 'deca' ? DECA_DISCS : HEP_DISCS;
+
+  if (!raw) { showToast('Incolla prima i dati!', 'error'); return; }
+
+  // Normalizza separatori: virgola decimale → punto, tab/spazi multipli → singolo spazio
+  const normalized = raw
+    .replace(/,(?=\d{3})/g, '.')   // 10,263 → 10.263 (prestazione con virgola)
+    .replace(/\t+/g, '\t')
+    .trim();
+
+  // Estrai tutti i numeri
+  const tokens = normalized.split(/[\t\s]+/).map(t => t.replace(',', '.')).filter(t => !isNaN(parseFloat(t)) && t !== '');
+  const nums = tokens.map(Number);
+
+  // Ogni disciplina = 8 valori: my_prest, my_dp, my_atl, my_coach, opp_atl, opp_coach, opp_prest, opp_dp
+  // Ma nel raw il formato è: my_prest my_dp my_atl my_coach opp_atl opp_coach opp_prest opp_dp
+  const expected = discs.length * 8;
+  // Potrebbe esserci pattume all'inizio (data, V/P, totali, nomi) — cerca il blocco di numeri
+  // che ha lunghezza multipla di 8 partendo da diverse posizioni
+  let startIdx = -1;
+  for (let i = 0; i <= nums.length - expected; i++) {
+    const slice = nums.slice(i, i + expected);
+    // Sanity check: i valori atleta/coach dovrebbero essere tra 500 e 10000
+    // posizioni atl/coach in ogni blocco di 8: idx 2,3,4,5
+    let ok = true;
+    for (let d = 0; d < discs.length; d++) {
+      const base = d * 8;
+      if (slice[base+2] < 400 || slice[base+2] > 12000) { ok = false; break; }
+      if (slice[base+3] < 400 || slice[base+3] > 3000)  { ok = false; break; }
+    }
+    if (ok) { startIdx = i; break; }
+  }
+
+  if (startIdx < 0) {
+    showToast('Non riesco a trovare i dati — controlla il formato!', 'error');
+    return;
+  }
+
+  const block = nums.slice(startIdx, startIdx + expected);
+  importRows = discs.map((disc, d) => {
+    const b = d * 8;
+    return {
+      nick, sport, discipline: disc,
+      my_prest:   block[b],
+      my_dp:      block[b+1],
+      my_atleta:  block[b+2],
+      my_coach:   block[b+3],
+      opp_atleta: block[b+4],
+      opp_coach:  block[b+5],
+      opp_prest:  block[b+6],
+      opp_dp:     block[b+7],
+    };
+  });
+
+  // Render preview table
+  let tHtml = `
+    <table class="import-table">
+      <thead><tr>
+        <th>Disciplina</th>
+        <th class="col-my">Prest</th><th class="col-my">DP</th>
+        <th class="col-my">Atleta</th><th class="col-my">Coach</th>
+        <th class="col-opp">Atleta avv.</th><th class="col-opp">Coach avv.</th>
+        <th class="col-opp">Prest avv.</th><th class="col-opp">DP avv.</th>
+      </tr></thead><tbody>`;
+  for (const r of importRows) {
+    tHtml += `<tr>
+      <td>${r.discipline}</td>
+      <td class="col-my">${r.my_prest}</td><td class="col-my">${r.my_dp}</td>
+      <td class="col-my">${r.my_atleta}</td><td class="col-my">${r.my_coach}</td>
+      <td class="col-opp">${r.opp_atleta}</td><td class="col-opp">${r.opp_coach}</td>
+      <td class="col-opp">${r.opp_prest}</td><td class="col-opp">${r.opp_dp}</td>
+    </tr>`;
+  }
+  tHtml += '</tbody></table>';
+
+  document.getElementById('importTable').innerHTML = tHtml;
+  document.getElementById('importCount').textContent = importRows.length;
+  document.getElementById('importPreview').style.display = 'block';
+  document.getElementById('importPreview').scrollIntoView({ behavior: 'smooth' });
+}
+
+async function saveImport() {
+  if (!importRows.length) return;
+  const btn = document.getElementById('btnSaveImport');
+  btn.disabled = true;
+  btn.textContent = 'Salvataggio…';
+
+  const { error } = await db.from('ac_dc_confronto').insert(importRows);
+  if (error) {
+    showToast('Errore: ' + error.message, 'error');
+    btn.disabled = false;
+    btn.textContent = '🚀 Salva tutto nel database';
+    return;
+  }
+  showToast(`✅ ${importRows.length} righe salvate!`, 'success');
+  btn.textContent = '✅ Salvato!';
+  btn.style.background = 'var(--text-dim)';
+  importRows = [];
 }
 
 // ── Toast ─────────────────────────────────────────────────────────────
