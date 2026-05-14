@@ -1317,10 +1317,19 @@ async function saveImport() {
     btn.textContent = '🚀 Salva tutto nel database';
     return;
   }
-  showToast(`✅ ${importRows.length} righe salvate!`, 'success');
-  btn.textContent = '✅ Salvato!';
-  btn.style.background = 'var(--text-dim)';
+  const count = importRows.length;
   importRows = [];
+  showToast(`✅ ${count} righe salvate!`, 'success');
+
+  // Reset form per nuovo inserimento
+  setTimeout(() => {
+    document.getElementById('importRaw').value = '';
+    document.getElementById('importPreview').style.display = 'none';
+    document.getElementById('importTable').innerHTML = '';
+    btn.disabled = false;
+    btn.textContent = '🚀 Salva tutto nel database';
+    btn.style.background = 'var(--green)';
+  }, 1200);
 }
 
 // ── Toast ─────────────────────────────────────────────────────────────
