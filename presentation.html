@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DC Coach Tracker — Presentazione</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,700;1,9..40,400&family=DM+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --or: #d96f2a; --or-lt: #fdf0e6; --or-dk: #8f4515;
+    --te: #169e8f; --te-lt: #e4f6f4; --te-dk: #0a5e56;
+    --bg: #f7f3ef; --surface: #ffffff; --border: #e8e0d6;
+    --text: #1a1410; --muted: #7a6a5e; --dim: #b8a898;
+    --slide-w: 780px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* ── Progress bar ── */
+  .progress-bar {
+    position: fixed;
+    top: 0; left: 0;
+    height: 3px;
+    background: var(--or);
+    transition: width 0.4s ease;
+    z-index: 100;
+  }
+
+  /* ── Slide container ── */
+  .stage {
+    width: 100%;
+    max-width: var(--slide-w);
+    padding: 0 20px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    position: relative;
+  }
+  .slide { display: none; animation: fadeUp 0.4s ease; }
+  .slide.active { display: block; }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── Nav ── */
+  .nav {
+    position: fixed;
+    bottom: 28px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 50px;
+    padding: 8px 14px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+    z-index: 50;
+  }
+  .nav-btn {
+    width: 36px; height: 36px;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    background: transparent;
+    cursor: pointer;
+    font-size: 16px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+    color: var(--muted);
+  }
+  .nav-btn:hover { background: var(--bg); color: var(--text); }
+  .nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+  .slide-counter {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--muted);
+    min-width: 48px;
+    text-align: center;
+  }
+  .dots {
+    display: flex; gap: 6px;
+  }
+  .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--border);
+    transition: background 0.2s, width 0.2s;
+    cursor: pointer;
+  }
+  .dot.active {
+    background: var(--or);
+    width: 18px;
+    border-radius: 3px;
+  }
+
+  /* ── Typography helpers ── */
+  .overline {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--or);
+    margin-bottom: 12px;
+  }
+  .overline-teal { color: var(--te); }
+  h1 { font-size: clamp(36px, 6vw, 56px); font-weight: 700; line-height: 1.1; }
+  h2 { font-size: clamp(26px, 4vw, 38px); font-weight: 700; line-height: 1.2; }
+  .lead { font-size: 18px; color: var(--muted); line-height: 1.7; margin-top: 16px; }
+  .tag {
+    display: inline-block;
+    background: var(--or-lt);
+    color: var(--or-dk);
+    font-size: 12px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 6px;
+    margin-right: 6px;
+  }
+  .tag-teal { background: var(--te-lt); color: var(--te-dk); }
+
+  /* ── Slide 1: Cover ── */
+  .cover-logo {
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 40px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .cover-logo-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--or);
+  }
+  .cover-kicker {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    color: var(--te);
+    margin-bottom: 20px;
+  }
+  .cover-sub {
+    font-size: 20px;
+    color: var(--muted);
+    margin-top: 20px;
+    max-width: 520px;
+    line-height: 1.6;
+  }
+  .cover-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 50px;
+    padding: 8px 16px;
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 36px;
+  }
+  .cover-pill span { color: var(--or); font-weight: 700; }
+
+  /* ── Slide 2: Il problema ── */
+  .problem-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 32px;
+  }
+  .problem-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+  }
+  .problem-card-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+  }
+  .problem-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px;
+  }
+  .problem-row:last-child { border-bottom: none; }
+  .problem-row .label { color: var(--muted); }
+  .problem-row .val { font-weight: 700; font-family: 'DM Mono', monospace; }
+  .dp-big {
+    text-align: center;
+    margin-top: 16px;
+    padding: 14px;
+    border-radius: 12px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .dp-big b { display: block; font-size: 32px; font-family: 'DM Mono', monospace; font-weight: 700; }
+  .dp-or b { color: var(--or); }
+  .dp-te b { color: var(--te); }
+  .arrow-mid {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    color: var(--dim);
+    padding: 0 4px;
+    align-self: center;
+  }
+  .question-box {
+    margin-top: 24px;
+    background: var(--or-lt);
+    border-left: 3px solid var(--or);
+    border-radius: 0 12px 12px 0;
+    padding: 14px 18px;
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--or-dk);
+  }
+
+  /* ── Slide 3: Come funziona ── */
+  .steps {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    margin-top: 32px;
+  }
+  .step {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+    padding: 24px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .step:last-child { border-bottom: none; }
+  .step-num {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: var(--or);
+    color: #fff;
+    font-weight: 700;
+    font-size: 16px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .step-title { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+  .step-desc { font-size: 15px; color: var(--muted); line-height: 1.6; }
+
+  /* ── Slide 4: Cosa inserire ── */
+  .fields-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-top: 32px;
+  }
+  .fields-col-head {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--border);
+    margin-bottom: 12px;
+  }
+  .fields-col-head.mine { border-color: var(--or); color: var(--or-dk); }
+  .fields-col-head.opp  { border-color: var(--te); color: var(--te-dk); }
+  .field-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    margin-bottom: 8px;
+    font-size: 14px;
+  }
+  .field-item.req { background: var(--or-lt); }
+  .field-item.opt { background: var(--bg); border: 1px solid var(--border); }
+  .field-item.req-te { background: var(--te-lt); }
+  .field-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .d-or { background: var(--or); }
+  .d-te { background: var(--te); }
+  .d-dim { background: var(--dim); }
+  .advance-note {
+    margin-top: 24px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 18px;
+    font-size: 14px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+  .advance-note b { color: var(--text); }
+
+  /* ── Slide 5: Analisi ── */
+  .analysis-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-top: 28px;
+  }
+  .an-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px;
+    text-align: center;
+  }
+  .an-disc {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .an-val {
+    font-size: 28px;
+    font-weight: 700;
+    font-family: 'DM Mono', monospace;
+    color: var(--or);
+  }
+  .an-val.neg { color: var(--te); }
+  .an-sub { font-size: 11px; color: var(--dim); margin-top: 4px; }
+  .an-pairs { font-size: 12px; color: var(--dim); margin-top: 6px; }
+  .paradox-teaser {
+    margin-top: 20px;
+    background: rgba(192,57,43,0.07);
+    border: 1px solid rgba(192,57,43,0.22);
+    border-radius: 12px;
+    padding: 14px 18px;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  .paradox-teaser b { color: #c0392b; }
+
+  /* ── Slide 6: CTA ── */
+  .cta-big {
+    margin-top: 40px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 32px;
+  }
+  .cta-url {
+    font-family: 'DM Mono', monospace;
+    font-size: 15px;
+    color: var(--or);
+    background: var(--or-lt);
+    padding: 12px 16px;
+    border-radius: 10px;
+    display: block;
+    margin-bottom: 20px;
+    word-break: break-all;
+  }
+  .cta-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 15px;
+    color: var(--muted);
+  }
+  .cta-row:last-child { border-bottom: none; }
+  .cta-icon {
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    background: var(--or-lt);
+    color: var(--or);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+  .italy-flag {
+    display: inline-flex;
+    gap: 2px;
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+  .italy-flag span {
+    width: 10px; height: 16px;
+    border-radius: 2px;
+  }
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progressBar" style="width:16.6%"></div>
+
+<div class="stage">
+
+  <!-- ═══ SLIDE 1: COVER ═══ -->
+  <div class="slide active" id="slide-0">
+    <div class="cover-logo">
+      <div class="cover-logo-dot"></div>
+      Italy Team · Athletics Championship
+      <div class="italy-flag">
+        <span style="background:#009246"></span>
+        <span style="background:#fff;border:1px solid #e8e0d6"></span>
+        <span style="background:#ce2b37"></span>
+      </div>
+    </div>
+    <div class="cover-kicker">Daily Challenge Coach Tracker</div>
+    <h1>Quanto vale<br>l'allenatore?</h1>
+    <p class="cover-sub">
+      Il gioco non ce lo dice. Noi lo stiamo misurando — gara dopo gara, disciplina per disciplina.
+    </p>
+    <div class="cover-pill">
+      Partecipano già <span>SergioCosi</span> e altri · niente account · basta il nick
+    </div>
+  </div>
+
+  <!-- ═══ SLIDE 2: IL PROBLEMA ═══ -->
+  <div class="slide" id="slide-1">
+    <div class="overline">Il paradosso che ha fatto scattare tutto</div>
+    <h2>Somma più alta,<br>eppure perdi.</h2>
+    <div style="display:flex;gap:12px;align-items:center;margin-top:28px">
+      <div class="problem-card" style="flex:1">
+        <div class="problem-card-label" style="color:var(--or)">Io — Lungo</div>
+        <div class="problem-row"><span class="label">Atleta</span><span class="val">7850</span></div>
+        <div class="problem-row"><span class="label">Allenatore</span><span class="val">800</span></div>
+        <div class="problem-row"><span class="label" style="font-size:11px;color:var(--dim)">Totale atleta+coach</span><span class="val" style="color:var(--or)">8650</span></div>
+        <div class="dp-big dp-or"><span>8,074 m → DP</span><b>1080</b></div>
+      </div>
+      <div class="arrow-mid">⚡</div>
+      <div class="problem-card" style="flex:1">
+        <div class="problem-card-label" style="color:var(--te)">Avversario — Lungo</div>
+        <div class="problem-row"><span class="label">Atleta</span><span class="val">7800</span></div>
+        <div class="problem-row"><span class="label">Allenatore</span><span class="val">1000</span></div>
+        <div class="problem-row"><span class="label" style="font-size:11px;color:var(--dim)">Totale atleta+coach</span><span class="val" style="color:var(--te)">8800</span></div>
+        <div class="dp-big dp-te"><span>8,438 m → DP</span><b>1174</b></div>
+      </div>
+    </div>
+    <div class="question-box">
+      Il mio atleta+coach è più alto — eppure perdo di 94 DP e 36 cm. Ancora peggio: con 7400+1000 (totale 8400) si batte chi ha 7850+800 (totale 8650). Il coach vale <em>enormemente</em> di più di quanto sembra. Ma quanto esattamente, e disciplina per disciplina?
+    </div>
+  </div>
+
+  <!-- ═══ SLIDE 3: COME FUNZIONA ═══ -->
+  <div class="slide" id="slide-2">
+    <div class="overline">Come funziona</div>
+    <h2>Tre passi,<br>un minuto per gara</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div>
+          <div class="step-title">Giochi una partita del Daily Challenge</div>
+          <div class="step-desc">Decathlon o Heptathlon — ogni gara vale. Inserisci i dati il giorno dopo quando vedi i risultati completi.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div>
+          <div class="step-title">Apri il tracker e inserisci i dati</div>
+          <div class="step-desc">Quattro campi per te, quattro per l'avversario (facoltativi). Il selettore avanza da solo da una disciplina all'altra — una gara intera in meno di 2 minuti.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div>
+          <div class="step-title">Il sistema confronta e calcola</div>
+          <div class="step-desc">Ogni osservazione si aggiunge alle altre. Man mano che crescono, l'analisi converge sul coefficiente reale. Tutti vedono i risultati in tempo reale.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ SLIDE 4: COSA INSERIRE ═══ -->
+  <div class="slide" id="slide-3">
+    <div class="overline">Il form</div>
+    <h2>Cosa inserire<br>per ogni disciplina</h2>
+    <div class="fields-grid">
+      <div>
+        <div class="fields-col-head mine">I tuoi dati — obbligatori</div>
+        <div class="field-item req"><div class="field-dot d-or"></div><b>Prestazione</b> &nbsp;(es. 10.28 sec)</div>
+        <div class="field-item req"><div class="field-dot d-or"></div><b>DP</b> ottenuti</div>
+        <div class="field-item req"><div class="field-dot d-or"></div><b>Atleta 🔥</b> valore corrente</div>
+        <div class="field-item req"><div class="field-dot d-or"></div><b>Allenatore 💧</b> valore corrente</div>
+      </div>
+      <div>
+        <div class="fields-col-head opp">Avversario — facoltativo</div>
+        <div class="field-item req-te"><div class="field-dot d-te"></div><b>Atleta 🔥</b></div>
+        <div class="field-item req-te"><div class="field-dot d-te"></div><b>Allenatore 💧</b></div>
+        <div class="field-item req-te"><div class="field-dot d-te"></div><b>DP</b></div>
+        <div class="field-item opt"><div class="field-dot d-dim"></div>Prestazione <span style="font-size:12px;color:var(--dim)">(opz.)</span></div>
+      </div>
+    </div>
+    <div class="advance-note">
+      💡 <b>Puoi anche importare una gara intera</b> con copia-incolla dal foglio Excel — il parser riconosce automaticamente i valori per tutte le discipline in una volta sola.
+    </div>
+  </div>
+
+  <!-- ═══ SLIDE 5: ANALISI ═══ -->
+  <div class="slide" id="slide-4">
+    <div class="overline">I risultati</div>
+    <h2>Cosa vedi nell'analisi<br><span style="color:var(--muted);font-size:0.7em;font-weight:400">(dati reali, base attuale)</span></h2>
+    <div class="analysis-grid">
+      <div class="an-card">
+        <div class="an-disc">100m</div>
+        <div class="an-val">+47</div>
+        <div class="an-sub">DP per +200 coach</div>
+        <div class="an-pairs">~28 coppie</div>
+      </div>
+      <div class="an-card">
+        <div class="an-disc">Lungo</div>
+        <div class="an-val">+31</div>
+        <div class="an-sub">DP per +200 coach</div>
+        <div class="an-pairs">~24 coppie</div>
+      </div>
+      <div class="an-card">
+        <div class="an-disc">1500m</div>
+        <div class="an-val">+62</div>
+        <div class="an-sub">DP per +200 coach</div>
+        <div class="an-pairs">~19 coppie</div>
+      </div>
+    </div>
+    <div class="paradox-teaser" style="margin-top:20px">
+      ⚡ <b>Paradossi</b> — i casi più preziosi: quando chi ha <b>più atleta + coach</b> perde comunque sui DP. Questi casi fissano un limite minimo al coefficiente e sono il dato analitico più robusto che abbiamo.
+    </div>
+    <p style="margin-top:16px;font-size:14px;color:var(--muted);line-height:1.7">
+      Le stime convergono con ~30 osservazioni per disciplina. Con più contributori ci arriviamo in poche settimane.
+    </p>
+  </div>
+
+  <!-- ═══ SLIDE 6: CTA ═══ -->
+  <div class="slide" id="slide-5">
+    <div class="overline overline-teal">Inizia subito</div>
+    <h2>Niente account.<br>Solo il tuo nick.</h2>
+    <div class="cta-big">
+      <span class="cta-url">https://SergioCosi.github.io/dctracker/</span>
+      <div class="cta-row">
+        <div class="cta-icon">📅</div>
+        Inserisci la data della gara — default: ieri (il momento classico per farlo)
+      </div>
+      <div class="cta-row">
+        <div class="cta-icon">⏭</div>
+        Il selettore disciplina <b>avanza da solo</b> dopo ogni salvataggio
+      </div>
+      <div class="cta-row">
+        <div class="cta-icon">👤</div>
+        Tab "Dati" per vedere tutti i tuoi inserimenti o quelli degli altri
+      </div>
+      <div class="cta-row">
+        <div class="cta-icon">📥</div>
+        Tab "Importa" per caricare una gara intera dal foglio Excel con copia-incolla
+      </div>
+      <div class="cta-row">
+        <div class="cta-icon">📊</div>
+        Tab "Analisi" per vedere le stime in tempo reale su tutte le discipline
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Nav -->
+<div class="nav">
+  <button class="nav-btn" id="btnPrev" onclick="go(-1)" disabled>←</button>
+  <div class="dots" id="dots"></div>
+  <span class="slide-counter" id="counter">1 / 6</span>
+  <button class="nav-btn" id="btnNext" onclick="go(1)">→</button>
+</div>
+
+<script>
+const TOTAL = 6;
+let cur = 0;
+
+function buildDots() {
+  const el = document.getElementById('dots');
+  el.innerHTML = Array.from({length: TOTAL}, (_, i) =>
+    `<div class="dot ${i===0?'active':''}" onclick="goTo(${i})"></div>`
+  ).join('');
+}
+
+function goTo(n) {
+  document.getElementById('slide-'+(cur)).classList.remove('active');
+  cur = n;
+  document.getElementById('slide-'+cur).classList.add('active');
+  document.getElementById('counter').textContent = (cur+1) + ' / ' + TOTAL;
+  document.getElementById('btnPrev').disabled = cur === 0;
+  document.getElementById('btnNext').disabled = cur === TOTAL-1;
+  document.querySelectorAll('.dot').forEach((d,i) => d.classList.toggle('active', i===cur));
+  document.getElementById('progressBar').style.width = ((cur+1)/TOTAL*100) + '%';
+}
+
+function go(dir) { if(cur+dir >= 0 && cur+dir < TOTAL) goTo(cur+dir); }
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === ' ') go(1);
+  if (e.key === 'ArrowLeft') go(-1);
+});
+
+buildDots();
+</script>
+</body>
+</html>

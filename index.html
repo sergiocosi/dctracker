@@ -83,6 +83,10 @@
     background: var(--surface);
     border-bottom: 1px solid var(--border);
   }
+  @media (min-width: 900px) {
+    .nav { justify-content: center; }
+    .nav-btn { flex: 0 0 auto; min-width: 130px; }
+  }
   .nav-btn {
     flex: 1;
     padding: 10px;
@@ -610,6 +614,121 @@
 
   .tab-content { display: none; }
   .tab-content.active { display: block; }
+  /* ── Guida / Slideshow ── */
+  .guide-wrap {
+    max-width: 720px;
+    margin: 0 auto;
+  }
+  .guide-slides { position: relative; }
+  .guide-slide { display: none; animation: gFade 0.3s ease; }
+  .guide-slide.active { display: block; }
+  @keyframes gFade { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+
+  .guide-header {
+    padding: 24px 20px 0;
+  }
+  .guide-overline {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--deca);
+    margin-bottom: 8px;
+  }
+  .guide-overline.teal { color: var(--hep); }
+  .guide-h { font-size: 24px; font-weight: 700; line-height: 1.2; margin-bottom: 12px; }
+  .guide-body { padding: 16px 20px 8px; }
+
+  .guide-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px 20px;
+    border-top: 1px solid var(--border);
+    margin-top: 8px;
+  }
+  .guide-arrow {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 7px 14px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    color: var(--text);
+    transition: background 0.15s;
+  }
+  .guide-arrow:hover { background: var(--border); }
+  .guide-arrow:disabled { opacity: 0.3; cursor: not-allowed; }
+  .guide-dots { display: flex; gap: 6px; align-items: center; }
+  .guide-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--border);
+    cursor: pointer;
+    transition: background 0.2s, width 0.2s;
+  }
+  .guide-dot.active { background: var(--deca); width: 16px; border-radius: 3px; }
+  .guide-counter { font-size: 12px; color: var(--text-muted); }
+
+  /* slide-specific components */
+  .g-two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+  .g-card {
+    background: var(--surface2);
+    border-radius: 12px;
+    padding: 14px;
+    border: 1px solid var(--border);
+  }
+  .g-card-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+  .g-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .g-row:last-child { border-bottom: none; }
+  .g-row .lbl { color: var(--text-muted); }
+  .g-row .val { font-weight: 700; font-family: monospace; font-size: 14px; }
+  .g-dp { text-align: center; padding: 12px 8px; margin-top: 10px; border-radius: 8px; font-size: 12px; color: var(--text-muted); }
+  .g-dp b { display: block; font-size: 26px; font-weight: 700; font-family: monospace; }
+  .g-sum { font-size: 11px; margin-top: 4px; font-weight: 700; }
+  .g-arrow-mid { display: flex; align-items: center; justify-content: center; font-size: 22px; color: var(--text-dim); }
+  .g-callout {
+    margin-top: 14px;
+    background: var(--deca-light);
+    border-left: 3px solid var(--deca);
+    border-radius: 0 10px 10px 0;
+    padding: 12px 14px;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--text);
+  }
+  .g-steps { margin-top: 16px; }
+  .g-step { display: flex; gap: 14px; padding: 16px 0; border-bottom: 1px solid var(--border); align-items: flex-start; }
+  .g-step:last-child { border-bottom: none; }
+  .g-step-num {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--deca); color: #fff;
+    font-weight: 700; font-size: 13px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; margin-top: 2px;
+  }
+  .g-step-title { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+  .g-step-desc { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+  .g-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 16px; }
+  .g-fields-head { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; padding-bottom: 8px; border-bottom: 2px solid var(--border); margin-bottom: 8px; }
+  .g-fields-head.mine { border-color: var(--deca); color: var(--deca); }
+  .g-fields-head.opp  { border-color: var(--hep);  color: var(--hep); }
+  .g-field { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 8px; margin-bottom: 6px; font-size: 13px; }
+  .g-field.req  { background: var(--deca-light); }
+  .g-field.ropt { background: var(--hep-light); }
+  .g-field.opt  { background: var(--surface2); }
+  .g-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .g-dot-or { background: var(--deca); }
+  .g-dot-te { background: var(--hep); }
+  .g-dot-dim { background: var(--text-dim); }
+  .g-anote { margin-top: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+  .g-cta-row { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 13px; color: var(--text-muted); line-height: 1.4; }
+  .g-cta-row:last-child { border-bottom: none; }
+  .g-cta-icon { width: 26px; height: 26px; border-radius: 7px; background: var(--deca-light); color: var(--deca); display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; margin-top: 1px; }
+  .g-progress { height: 3px; background: var(--border); border-radius: 2px; margin-bottom: 0; overflow: hidden; }
+  .g-progress-fill { height: 100%; background: var(--deca); border-radius: 2px; transition: width 0.3s ease; }
+
 
 </style>
 </head>
@@ -626,6 +745,7 @@
 
 <!-- Nav -->
 <div class="nav">
+  <button class="nav-btn" onclick="switchTab('guide')" id="tab-guide">❓ Guida</button>
   <button class="nav-btn active" onclick="switchTab('insert')" id="tab-insert">➕ Inserisci</button>
   <button class="nav-btn" onclick="switchTab('import')" id="tab-import">📥 Importa</button>
   <button class="nav-btn" onclick="switchTab('log')" id="tab-log">📋 Sessione</button>
@@ -878,6 +998,220 @@
   </div>
 
 
+  <!-- ═══ GUIDA TAB ═══ -->
+  <div class="tab-content" id="pane-guide">
+    <div class="guide-wrap">
+      <div class="card" style="padding:0;overflow:hidden">
+
+        <div class="g-progress"><div class="g-progress-fill" id="gProgress" style="width:16.6%"></div></div>
+
+        <div class="guide-slides">
+
+          <!-- Slide 1: Perché esiste -->
+          <div class="guide-slide active" id="gs-0">
+            <div class="guide-header">
+              <div class="guide-overline">DC Coach Tracker — Italy Team</div>
+              <div class="guide-h">Quanto vale l'allenatore?<br><span style="color:var(--text-muted);font-size:0.65em;font-weight:400">Il gioco non ce lo dice. Noi lo misuriamo.</span></div>
+            </div>
+            <div class="guide-body">
+              <p style="font-size:14px;color:var(--text-muted);line-height:1.7">
+                Nel Daily Challenge, il valore del tuo <b>Allenatore 💧</b> influenza le prestazioni — ma in che misura? Il gioco non lo rivela.
+                Raccogliendo i dati di più giocatori gara per gara, possiamo stimare il coefficiente esatto, disciplina per disciplina.
+              </p>
+              <div style="margin-top:16px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+                <div style="background:var(--surface2);border-radius:10px;padding:12px;text-align:center">
+                  <div style="font-size:22px;font-weight:700;color:var(--deca)">759</div>
+                  <div style="font-size:10px;color:var(--text-muted);margin-top:2px">righe inserite</div>
+                </div>
+                <div style="background:var(--surface2);border-radius:10px;padding:12px;text-align:center">
+                  <div style="font-size:22px;font-weight:700;color:var(--deca)">10</div>
+                  <div style="font-size:10px;color:var(--text-muted);margin-top:2px">discipline analizzate</div>
+                </div>
+                <div style="background:var(--surface2);border-radius:10px;padding:12px;text-align:center">
+                  <div style="font-size:22px;font-weight:700;color:var(--hep)">+</div>
+                  <div style="font-size:10px;color:var(--text-muted);margin-top:2px">aperto a tutti</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Slide 2: Il paradosso -->
+          <div class="guide-slide" id="gs-1">
+            <div class="guide-header">
+              <div class="guide-overline">Il paradosso che ha fatto scattare tutto</div>
+              <div class="guide-h">Somma più alta,<br>eppure perdi. ⚡</div>
+            </div>
+            <div class="guide-body">
+              <div class="g-two-col" style="align-items:center">
+                <div class="g-card">
+                  <div class="g-card-label" style="color:var(--deca)">Io — Peso</div>
+                  <div class="g-row"><span class="lbl">Atleta</span><span class="val">8200</span></div>
+                  <div class="g-row"><span class="lbl">Allenatore</span><span class="val">800</span></div>
+                  <div class="g-dp" style="background:var(--deca-light)">
+                    20,442 m
+                    <b style="color:var(--deca)">1127 DP</b>
+                    <div class="g-sum" style="color:var(--deca)">Tot: 9000</div>
+                  </div>
+                </div>
+                <div class="g-card">
+                  <div class="g-card-label" style="color:var(--hep)">Avversario — Peso</div>
+                  <div class="g-row"><span class="lbl">Atleta</span><span class="val">7810</span></div>
+                  <div class="g-row"><span class="lbl">Allenatore</span><span class="val">1000</span></div>
+                  <div class="g-dp" style="background:var(--hep-light)">
+                    21,265 m
+                    <b style="color:var(--hep)">1179 DP</b>
+                    <div class="g-sum" style="color:var(--hep)">Tot: 8810</div>
+                  </div>
+                </div>
+              </div>
+              <div class="g-callout" style="margin-top:12px">
+                Il mio atleta+coach è 9000 vs 8810 — eppure perdo di 52 DP. Il coach vale <em>molto</em> di più di quanto sembra. Esattamente quanto, disciplina per disciplina, è quello che vogliamo scoprire.
+              </div>
+            </div>
+          </div>
+
+          <!-- Slide 3: Come funziona -->
+          <div class="guide-slide" id="gs-2">
+            <div class="guide-header">
+              <div class="guide-overline">Come funziona</div>
+              <div class="guide-h">Tre passi,<br>un minuto per gara</div>
+            </div>
+            <div class="guide-body">
+              <div class="g-steps">
+                <div class="g-step">
+                  <div class="g-step-num">1</div>
+                  <div>
+                    <div class="g-step-title">Giochi una partita del Daily Challenge</div>
+                    <div class="g-step-desc">Decathlon o Heptathlon. Inserisci i dati il giorno dopo quando vedi i risultati completi.</div>
+                  </div>
+                </div>
+                <div class="g-step">
+                  <div class="g-step-num">2</div>
+                  <div>
+                    <div class="g-step-title">Inserisci i dati disciplina per disciplina</div>
+                    <div class="g-step-desc">I tuoi valori sono obbligatori; quelli dell'avversario facoltativi ma preziosi. Il selettore avanza da solo dopo ogni salvataggio.</div>
+                  </div>
+                </div>
+                <div class="g-step">
+                  <div class="g-step-num">3</div>
+                  <div>
+                    <div class="g-step-title">Il sistema confronta e calcola</div>
+                    <div class="g-step-desc">Più dati raccogliamo, più la stima converge sul coefficiente reale. Tutti vedono i risultati in tempo reale nel tab Analisi.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Slide 4: Cosa inserire -->
+          <div class="guide-slide" id="gs-3">
+            <div class="guide-header">
+              <div class="guide-overline">Il form — tab Inserisci</div>
+              <div class="guide-h">Cosa inserire<br>per ogni disciplina</div>
+            </div>
+            <div class="guide-body">
+              <div class="g-fields">
+                <div>
+                  <div class="g-fields-head mine">I tuoi dati — obbligatori</div>
+                  <div class="g-field req"><div class="g-dot g-dot-or"></div><b>Prestazione</b> &nbsp;(es. 10.28)</div>
+                  <div class="g-field req"><div class="g-dot g-dot-or"></div><b>DP</b> ottenuti</div>
+                  <div class="g-field req"><div class="g-dot g-dot-or"></div><b>Atleta 🔥</b></div>
+                  <div class="g-field req"><div class="g-dot g-dot-or"></div><b>Allenatore 💧</b></div>
+                </div>
+                <div>
+                  <div class="g-fields-head opp">Avversario — facoltativo</div>
+                  <div class="g-field ropt"><div class="g-dot g-dot-te"></div><b>Atleta 🔥</b></div>
+                  <div class="g-field ropt"><div class="g-dot g-dot-te"></div><b>Allenatore 💧</b></div>
+                  <div class="g-field ropt"><div class="g-dot g-dot-te"></div><b>DP</b></div>
+                  <div class="g-field opt"><div class="g-dot g-dot-dim"></div>Prestazione <span style="font-size:11px;color:var(--text-dim)">(opz.)</span></div>
+                </div>
+              </div>
+              <div class="g-anote">
+                💡 <b>Importa una gara intera</b> dal tab <b>Importa</b> — incolla i dati dal foglio Excel e il parser riconosce tutti i valori in una volta.
+              </div>
+            </div>
+          </div>
+
+          <!-- Slide 5: Analisi -->
+          <div class="guide-slide" id="gs-4">
+            <div class="guide-header">
+              <div class="guide-overline">Tab Analisi</div>
+              <div class="guide-h">Cosa vedi<br>nei risultati</div>
+            </div>
+            <div class="guide-body">
+              <p style="font-size:13px;color:var(--text-muted);line-height:1.6;margin-bottom:14px">
+                Per ogni disciplina, l'analisi stima: <em>se il coach aumentasse di +200, quanti DP in più otterrebbe un giocatore?</em>
+                Il confronto avviene tra osservazioni con atleta simile ma coach diverso.
+              </p>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+                <div class="g-card" style="text-align:center">
+                  <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px">Filtro Max Δ atleta</div>
+                  <div style="font-size:13px;line-height:1.5">Limita i confronti a coppie con atleta simile — riduce il rumore.</div>
+                </div>
+                <div class="g-card" style="text-align:center">
+                  <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px">Badge <span style="background:rgba(22,158,143,0.2);color:var(--hep);padding:1px 5px;border-radius:4px;font-size:10px;font-weight:700">P</span> Puro</div>
+                  <div style="font-size:13px;line-height:1.5">Stesso identico atleta — osservazioni più affidabili.</div>
+                </div>
+              </div>
+              <div class="g-callout">
+                ⚡ <b>Paradossi</b> — i casi dove chi ha somma atleta+coach più alta perde comunque. Sono i più preziosi: fissano un limite minimo al coefficiente allenatore.
+              </div>
+            </div>
+          </div>
+
+          <!-- Slide 6: I tuoi dati -->
+          <div class="guide-slide" id="gs-5">
+            <div class="guide-header">
+              <div class="guide-overline teal">Pronto? Niente account.</div>
+              <div class="guide-h">Solo il tuo nick<br>e si parte.</div>
+            </div>
+            <div class="guide-body">
+              <div style="background:var(--surface2);border-radius:10px;padding:4px 0;margin-bottom:4px">
+                <div class="g-cta-row">
+                  <div class="g-cta-icon">📅</div>
+                  <div>La <b>data</b> ha default a ieri — tipicamente si inserisce il mattino dopo</div>
+                </div>
+                <div class="g-cta-row">
+                  <div class="g-cta-icon">⏭</div>
+                  <div>Il <b>selettore disciplina</b> avanza da solo dopo ogni salvataggio</div>
+                </div>
+                <div class="g-cta-row">
+                  <div class="g-cta-icon">📥</div>
+                  <div>Tab <b>Importa</b>: copia-incolla dal foglio Excel, carica una gara intera</div>
+                </div>
+                <div class="g-cta-row">
+                  <div class="g-cta-icon">👤</div>
+                  <div>Tab <b>Dati</b>: vedi tutti i tuoi inserimenti (o quelli di altri)</div>
+                </div>
+                <div class="g-cta-row">
+                  <div class="g-cta-icon">📊</div>
+                  <div>Tab <b>Analisi</b>: stime in tempo reale su tutte le discipline</div>
+                </div>
+              </div>
+              <div style="margin-top:12px;text-align:center">
+                <button onclick="switchTab('insert')" style="background:var(--deca);color:#fff;border:none;border-radius:10px;padding:11px 24px;font-size:14px;font-weight:700;cursor:pointer">
+                  Inizia a inserire →
+                </button>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /guide-slides -->
+
+        <div class="guide-nav">
+          <button class="guide-arrow" id="gPrev" onclick="guideGo(-1)" disabled>← Indietro</button>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+            <div class="guide-dots" id="gDots"></div>
+            <span class="guide-counter" id="gCounter">1 / 6</span>
+          </div>
+          <button class="guide-arrow" id="gNext" onclick="guideGo(1)">Avanti →</button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+
 </div>
 
 <!-- Toast -->
@@ -965,7 +1299,7 @@ function setSport(s) {
 }
 
 function switchTab(t) {
-  ['insert','import','log','data','analysis'].forEach(id => {
+  ['insert','import','log','data','analysis','guide'].forEach(id => {
     document.getElementById('pane-'+id).classList.toggle('active', id === t);
     document.getElementById('tab-'+id).classList.toggle('active', id === t);
   });
@@ -1106,16 +1440,11 @@ async function runAnalysis() {
     for (const row of _within) {
       const dAtl   = Math.abs(row.my_atleta - row.opp_atleta);
       const dCoach = row.my_coach - row.opp_coach;
-      if (dAtl <= maxDeltaAtleta && dCoach !== 0) {
-        const dDP  = row.my_dp - row.opp_dp;
-        const isPure = dAtl === 0;
-        // se pureOnly, saltiamo i non-puri
-        if (!pureOnly || isPure) {
-          coeffs.push({ v: (dDP / dCoach) * 200, source: isPure ? 'WP' : 'W', dAtl, dCoach });
-        }
-        seenW.add(row.id + '_my|' + row.id + '_opp');
 
-        // Paradosso: somma atleta+coach favorisce un lato ma i DP favoriscono l'altro
+      // Paradosso: rilevato SEMPRE, indipendentemente dal filtro Δatleta
+      if (dCoach !== 0) {
+        const dDP2   = row.my_dp - row.opp_dp;
+        const isPure2 = dAtl === 0;
         const mySum  = row.my_atleta  + row.my_coach;
         const oppSum = row.opp_atleta + row.opp_coach;
         const myWins  = row.my_dp  > row.opp_dp;
@@ -1133,13 +1462,23 @@ async function runAnalysis() {
           const dC = winnerCoach - loserCoach;
           const ratio = dC > 0 ? (dA / dC).toFixed(2) : null;
           paradoxes.push({
-            disc, sport: sp, isPure,
+            disc, sport: sp, isPure: isPure2,
             loserAtl, loserCoach, loserDP,
             winnerAtl, winnerCoach, winnerDP,
-            dAtl, dCoach: Math.abs(dCoach), dDP: Math.abs(dDP),
+            dAtl, dCoach: Math.abs(dCoach), dDP: Math.abs(dDP2),
             ratio
           });
         }
+      }
+
+      // Coefficienti: solo se entro il filtro Δatleta
+      if (dAtl <= maxDeltaAtleta && dCoach !== 0) {
+        const dDP  = row.my_dp - row.opp_dp;
+        const isPure = dAtl === 0;
+        if (!pureOnly || isPure) {
+          coeffs.push({ v: (dDP / dCoach) * 200, source: isPure ? 'WP' : 'W', dAtl, dCoach });
+        }
+        seenW.add(row.id + '_my|' + row.id + '_opp');
       }
     }
 
@@ -1572,6 +1911,34 @@ function showToast(msg, type) {
   t.className = 'toast ' + type + ' show';
   setTimeout(() => t.classList.remove('show'), 2800);
 }
+
+// ── Guide slideshow ──────────────────────────────────────────────────────────
+const G_TOTAL = 6;
+let gCur = 0;
+
+function buildGuideDots() {
+  const el = document.getElementById('gDots');
+  if (!el) return;
+  el.innerHTML = Array.from({length: G_TOTAL}, (_, i) =>
+    `<div class="guide-dot ${i===0?'active':''}" onclick="guideTo(${i})"></div>`
+  ).join('');
+}
+
+function guideTo(n) {
+  document.getElementById('gs-'+gCur).classList.remove('active');
+  gCur = n;
+  document.getElementById('gs-'+gCur).classList.add('active');
+  document.getElementById('gCounter').textContent = (gCur+1) + ' / ' + G_TOTAL;
+  document.getElementById('gPrev').disabled = gCur === 0;
+  document.getElementById('gNext').disabled = gCur === G_TOTAL-1;
+  document.querySelectorAll('.guide-dot').forEach((d,i) => d.classList.toggle('active', i===gCur));
+  document.getElementById('gProgress').style.width = ((gCur+1)/G_TOTAL*100) + '%';
+}
+
+function guideGo(dir) { if(gCur+dir >= 0 && gCur+dir < G_TOTAL) guideTo(gCur+dir); }
+
+buildGuideDots();
+
 </script>
 </body>
 </html>
