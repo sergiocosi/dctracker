@@ -103,6 +103,10 @@
 
   /* ── Main content ── */
   .main { padding: 16px; max-width: 640px; margin: 0 auto; }
+  @media (min-width: 900px) {
+    .main { max-width: 1100px; }
+    #pane-insert, #pane-import, #pane-log { max-width: 640px; }
+  }
 
   /* ── Sport toggle ── */
   .sport-toggle {
@@ -554,8 +558,9 @@
     width: 100%;
     border-collapse: collapse;
     font-size: 12px;
-    display: block;
-    overflow-x: auto;
+  }
+  @media (max-width: 899px) {
+    .data-table { display: block; overflow-x: auto; }
   }
   .data-table th {
     background: var(--surface2);
@@ -1391,7 +1396,7 @@ function renderUserData(data, nick) {
       </div>
       <div class="data-sum-cell">
         <div class="data-sum-val">${withOpp}</div>
-        <div class="data-sum-lbl">con avversario</div>
+        <div class="data-sum-lbl">usabili per analisi</div>
       </div>
     </div>
     <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px;text-align:center">
