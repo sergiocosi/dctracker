@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>DC Coach Tracker</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg' viewBox%3D'0 0 32 32'%3E%3Ccircle cx%3D'16' cy%3D'18' r%3D'12' fill%3D'%23d96f2a'%2F%3E%3Ccircle cx%3D'16' cy%3D'18' r%3D'8.5' fill%3D'none' stroke%3D'white' stroke-width%3D'1.5'%2F%3E%3Cline x1%3D'16' y1%3D'18' x2%3D'16' y2%3D'11' stroke%3D'white' stroke-width%3D'2.2' stroke-linecap%3D'round'%2F%3E%3Cline x1%3D'16' y1%3D'18' x2%3D'21' y2%3D'18' stroke%3D'white' stroke-width%3D'2.2' stroke-linecap%3D'round'%2F%3E%3Crect x%3D'13' y%3D'4.5' width%3D'6' height%3D'3.5' rx%3D'1.5' fill%3D'%23b35e20'%2F%3E%3Ccircle cx%3D'10' cy%3D'4.5' r%3D'1.2' fill%3D'%23b35e20'%2F%3E%3Ccircle cx%3D'22' cy%3D'4.5' r%3D'1.2' fill%3D'%23b35e20'%2F%3E%3C%2Fsvg%3E">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root {
@@ -547,8 +548,64 @@
   }
   .filter-input:focus { outline: none; border-color: var(--accent); }
 
+
+  /* ── Data tab ── */
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    display: block;
+    overflow-x: auto;
+  }
+  .data-table th {
+    background: var(--surface2);
+    color: var(--text-muted);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 6px 8px;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+  }
+  .data-table td {
+    padding: 6px 8px;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .data-table tr:last-child td { border-bottom: none; }
+  .data-table tr:hover td { background: var(--surface2); }
+  .data-table td:nth-child(1) { color: var(--text-muted); font-size: 11px; }
+  .data-table td:nth-child(3) { font-weight: 600; color: var(--accent); text-align: left; }
+  .data-table .col-my  { background: rgba(217,111,42,0.04); }
+  .data-table .col-opp { background: rgba(22,158,143,0.04); }
+  .data-summary {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .data-sum-cell {
+    background: var(--surface2);
+    border-radius: 9px;
+    padding: 10px;
+    text-align: center;
+  }
+  .data-sum-val {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+  }
+  .data-sum-lbl { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+
   .tab-content { display: none; }
   .tab-content.active { display: block; }
+
 </style>
 </head>
 <body>
@@ -567,6 +624,7 @@
   <button class="nav-btn active" onclick="switchTab('insert')" id="tab-insert">➕ Inserisci</button>
   <button class="nav-btn" onclick="switchTab('import')" id="tab-import">📥 Importa</button>
   <button class="nav-btn" onclick="switchTab('log')" id="tab-log">📋 Sessione</button>
+  <button class="nav-btn" onclick="switchTab('data')" id="tab-data">👤 Dati</button>
   <button class="nav-btn" onclick="switchTab('analysis')" id="tab-analysis">📊 Analisi</button>
 </div>
 
@@ -604,6 +662,10 @@
 
     <!-- Discipline select -->
     <div class="card">
+      <div class="filter-row" style="margin-bottom:14px">
+        <span class="filter-label">📅 Data gara</span>
+        <input class="filter-input" type="date" id="game_date">
+      </div>
       <div class="card-title">1. Seleziona disciplina</div>
       <select class="disc-select" id="discSelect"></select>
 
@@ -688,9 +750,13 @@
           <option value="hep">Heptathlon</option>
         </select>
       </div>
-      <div class="filter-row" style="margin-bottom:14px">
+      <div class="filter-row" style="margin-bottom:10px">
         <span class="filter-label">Nick</span>
         <input class="filter-input" type="text" id="importNick" placeholder="il tuo nick">
+      </div>
+      <div class="filter-row" style="margin-bottom:14px">
+        <span class="filter-label">📅 Data gara</span>
+        <input class="filter-input" type="date" id="importDate">
       </div>
       <textarea id="importRaw" placeholder="Incolla qui la riga dati grezza..." style="
         width:100%;min-height:90px;background:var(--surface2);border:1px solid var(--border);
@@ -775,6 +841,38 @@
     <div id="analysisResult"><div class="no-data">Premi "Aggiorna analisi" per caricare i dati dal database.</div></div>
   </div>
 
+  <!-- ═══ DATA TAB ═══ -->
+  <div class="tab-content" id="pane-data">
+
+    <div class="card" style="margin-bottom:12px">
+      <div class="card-title">👤 Esplora dati per nick</div>
+      <div class="filter-row">
+        <span class="filter-label">Nick</span>
+        <input class="filter-input" type="text" id="dataNick" list="dataNickList" placeholder="il tuo nick o un altro">
+        <datalist id="dataNickList"></datalist>
+      </div>
+      <div class="filter-row">
+        <span class="filter-label">Sport</span>
+        <select class="filter-input" id="dataFilterSport">
+          <option value="all">Tutti</option>
+          <option value="deca">Decathlon</option>
+          <option value="hep">Heptathlon</option>
+        </select>
+      </div>
+      <div class="filter-row" style="margin-bottom:14px">
+        <span class="filter-label">Disciplina</span>
+        <select class="filter-input" id="dataFilterDisc">
+          <option value="all">Tutte</option>
+        </select>
+      </div>
+      <button onclick="loadUserData()" class="btn-add btn-add-deca" style="margin-top:0">
+        Carica dati
+      </button>
+    </div>
+    <div id="dataResult"></div>
+  </div>
+
+
 </div>
 
 <!-- Toast -->
@@ -813,12 +911,21 @@ let sport = 'deca';
 let sessionEntries = [];
 
 // ── Init ─────────────────────────────────────────────────────────────
+function getYesterday() {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  return d.toISOString().slice(0, 10);
+}
+
 window.onload = () => {
   const saved = localStorage.getItem('dc_nick');
   if (saved) document.getElementById('nickInput').value = saved;
   document.getElementById('nickInput').addEventListener('input', e => {
     localStorage.setItem('dc_nick', e.target.value.trim());
   });
+  const yesterday = getYesterday();
+  document.getElementById('game_date').value = yesterday;
+  document.getElementById('importDate').value = yesterday;
   buildDiscSelect();
 };
 
@@ -853,14 +960,15 @@ function setSport(s) {
 }
 
 function switchTab(t) {
-  ['insert','import','log','analysis'].forEach(id => {
+  ['insert','import','log','data','analysis'].forEach(id => {
     document.getElementById('pane-'+id).classList.toggle('active', id === t);
     document.getElementById('tab-'+id).classList.toggle('active', id === t);
   });
-  // Sync nick into import tab
-  if (t === 'import') {
-    const nick = document.getElementById('nickInput').value.trim();
-    if (nick) document.getElementById('importNick').value = nick;
+  const nick = document.getElementById('nickInput').value.trim();
+  if (t === 'import' && nick) document.getElementById('importNick').value = nick;
+  if (t === 'data') {
+    if (nick) document.getElementById('dataNick').value = nick;
+    loadNickList();
   }
 }
 
@@ -870,10 +978,12 @@ async function submitEntry() {
   if (!nick) { showToast('Inserisci il tuo nick prima!', 'err'); return; }
 
   const disc = document.getElementById('discSelect').value;
+  const game_date = document.getElementById('game_date').value || null;
   const row = {
     nick,
     sport,
     discipline: disc,
+    game_date,
     my_prest:   parseFloat(document.getElementById('my_prest').value)   || null,
     my_dp:      parseInt(document.getElementById('my_dp').value)        || null,
     my_atleta:  parseInt(document.getElementById('my_atleta').value)    || null,
@@ -1213,6 +1323,122 @@ function toggleParadoxes(btn) {
   btn.style.color = body.classList.contains('open') ? 'var(--red)' : '';
 }
 
+
+// ── User data tab ────────────────────────────────────────────────────
+async function loadNickList() {
+  try {
+    const { data } = await db.from('ac_dc_confronto').select('nick');
+    if (!data) return;
+    const nicks = [...new Set(data.map(r => r.nick).filter(Boolean))].sort();
+    const dl = document.getElementById('dataNickList');
+    dl.innerHTML = nicks.map(n => `<option value="${n}">`).join('');
+    // Also populate disc filter
+    const { data: discs } = await db.from('ac_dc_confronto').select('discipline');
+    if (discs) {
+      const uniq = [...new Set(discs.map(r => r.discipline).filter(Boolean))].sort();
+      const sel = document.getElementById('dataFilterDisc');
+      sel.innerHTML = '<option value="all">Tutte</option>' +
+        uniq.map(d => `<option value="${d}">${d}</option>`).join('');
+    }
+  } catch(e) {}
+}
+
+async function loadUserData() {
+  const nick = document.getElementById('dataNick').value.trim();
+  if (!nick) { showToast('Inserisci un nick!', 'err'); return; }
+  const sport = document.getElementById('dataFilterSport').value;
+  const disc  = document.getElementById('dataFilterDisc').value;
+  const el = document.getElementById('dataResult');
+  el.innerHTML = '<div class="no-data">Caricamento…</div>';
+
+  let query = db.from('ac_dc_confronto').select('*').eq('nick', nick)
+    .order('game_date', { ascending: false, nullsFirst: false })
+    .order('created_at', { ascending: false });
+  if (sport !== 'all') query = query.eq('sport', sport);
+  if (disc  !== 'all') query = query.eq('discipline', disc);
+
+  const { data, error } = await query;
+  if (error) { el.innerHTML = `<div class="no-data">Errore: ${error.message}</div>`; return; }
+  if (!data || !data.length) {
+    el.innerHTML = `<div class="no-data">Nessun dato trovato per "<b>${nick}</b>".</div>`;
+    return;
+  }
+  renderUserData(data, nick);
+}
+
+function fmtDate(d) {
+  if (!d) return '—';
+  const [y, m, dd] = d.split('-');
+  return `${dd}/${m}/${y}`;
+}
+
+function renderUserData(data, nick) {
+  const el = document.getElementById('dataResult');
+  const decaCount = data.filter(r => r.sport === 'deca').length;
+  const hepCount  = data.filter(r => r.sport === 'hep').length;
+  const withOpp   = data.filter(r => r.opp_dp && r.opp_atleta && r.opp_coach).length;
+  const avgDP     = data.filter(r => r.my_dp).reduce((s, r) => s + r.my_dp, 0) / data.filter(r => r.my_dp).length;
+
+  const summary = `
+    <div class="data-summary">
+      <div class="data-sum-cell">
+        <div class="data-sum-val">${data.length}</div>
+        <div class="data-sum-lbl">righe totali</div>
+      </div>
+      <div class="data-sum-cell">
+        <div class="data-sum-val">${Math.round(avgDP) || '—'}</div>
+        <div class="data-sum-lbl">DP medio</div>
+      </div>
+      <div class="data-sum-cell">
+        <div class="data-sum-val">${withOpp}</div>
+        <div class="data-sum-lbl">con avversario</div>
+      </div>
+    </div>
+    <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px;text-align:center">
+      ${decaCount ? `<span class="sport-badge badge-deca">D ${decaCount}</span>` : ''}
+      ${hepCount  ? `<span class="sport-badge badge-hep">H ${hepCount}</span>`  : ''}
+    </div>
+  `;
+
+  let rows = '';
+  for (const r of data) {
+    const badge = r.sport === 'deca'
+      ? '<span class="log-sport-badge badge-deca">D</span>'
+      : '<span class="log-sport-badge badge-hep">H</span>';
+    rows += `<tr>
+      <td>${fmtDate(r.game_date)}</td>
+      <td>${badge}</td>
+      <td>${r.discipline}</td>
+      <td class="col-my">${r.my_prest ?? '—'}</td>
+      <td class="col-my">${r.my_dp ?? '—'}</td>
+      <td class="col-my">${r.my_atleta ?? '—'}</td>
+      <td class="col-my">${r.my_coach ?? '—'}</td>
+      <td class="col-opp">${r.opp_atleta ?? '—'}</td>
+      <td class="col-opp">${r.opp_coach ?? '—'}</td>
+      <td class="col-opp">${r.opp_prest ?? '—'}</td>
+      <td class="col-opp">${r.opp_dp ?? '—'}</td>
+    </tr>`;
+  }
+
+  const table = `
+    <div class="card">
+      <div class="card-title" style="margin-bottom:12px">📋 ${data.length} righe — ${nick}</div>
+      ${summary}
+      <table class="data-table">
+        <thead><tr>
+          <th>Data</th><th>Sport</th><th style="text-align:left">Disciplina</th>
+          <th class="col-my">Prest</th><th class="col-my">DP</th>
+          <th class="col-my">Atl 🔥</th><th class="col-my">Coach 💧</th>
+          <th class="col-opp">Atl avv.</th><th class="col-opp">Coach avv.</th>
+          <th class="col-opp">Prest avv.</th><th class="col-opp">DP avv.</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  `;
+  el.innerHTML = table;
+}
+
 // ── Import ────────────────────────────────────────────────────────────
 const DECA_DISCS = ['100m','Lungo','Peso','Alto','400m','110hs','Disco','Asta','Giavellotto','1500m'];
 const HEP_DISCS  = ['100hs','Alto','Peso','200m','Lungo','Giavellotto','800m'];
@@ -1310,7 +1536,9 @@ async function saveImport() {
   btn.disabled = true;
   btn.textContent = 'Salvataggio…';
 
-  const { error } = await db.from('ac_dc_confronto').insert(importRows);
+  const importDate = document.getElementById('importDate').value || null;
+  const rowsWithDate = importRows.map(r => ({ ...r, game_date: importDate }));
+  const { error } = await db.from('ac_dc_confronto').insert(rowsWithDate);
   if (error) {
     showToast('Errore: ' + error.message, 'error');
     btn.disabled = false;
