@@ -734,17 +734,41 @@
 </head>
 <body>
 
+<!-- Login screen -->
+<div id="login-screen" style="display:none;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px">
+  <div style="background:#fff;border-radius:16px;padding:32px;width:100%;max-width:360px;border:1px solid var(--border);box-shadow:0 4px 20px rgba(0,0,0,0.08)">
+    <div style="font-size:22px;font-weight:700;color:var(--deca);margin-bottom:4px">DC·Coach Tracker</div>
+    <div style="font-size:13px;color:var(--text-muted);margin-bottom:24px">Accedi con il tuo account Italy Team</div>
+    <div style="margin-bottom:14px">
+      <label style="font-size:11px;font-weight:600;color:var(--text-muted);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:.4px">Giocatore</label>
+      <select id="login-player" style="width:100%;font-size:15px;padding:10px 12px;border:1.5px solid var(--border);border-radius:9px;background:#fff;color:var(--text);appearance:none">
+        <option value="">— seleziona il tuo nome —</option>
+      </select>
+    </div>
+    <div style="margin-bottom:20px">
+      <label style="font-size:11px;font-weight:600;color:var(--text-muted);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:.4px">Password</label>
+      <input type="password" id="login-password" placeholder="••••••••••" style="width:100%;font-size:15px;padding:10px 12px;border:1.5px solid var(--border);border-radius:9px;background:#fff;color:var(--text)" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <button onclick="doLogin()" style="width:100%;padding:12px;font-size:14px;font-weight:700;border:none;border-radius:9px;background:var(--deca);color:#fff;cursor:pointer">ACCEDI</button>
+    <div id="login-error" style="display:none;margin-top:12px;background:rgba(192,57,43,0.1);color:var(--red);border-radius:8px;padding:10px 14px;font-size:13px"></div>
+    <div style="margin-top:16px;text-align:center">
+      <a href="https://sergiocosi.github.io/italy-team/" style="font-size:12px;color:var(--text-muted)">← Torna all'Optimizer</a>
+    </div>
+  </div>
+</div>
+
 <!-- Header -->
-<div class="header">
+<div class="header" id="app-header" style="display:none">
   <div class="header-logo">DC<span>&bull;</span>Coach</div>
   <div class="header-nick">
-    <span class="nick-label">Nick</span>
-    <input type="text" id="nickInput" placeholder="il tuo nick" maxlength="20">
+    <span class="nick-label" style="font-size:11px;color:var(--text-muted)">Italy Team</span>
+    <span id="header-username" style="font-size:13px;font-weight:600;color:var(--text)">—</span>
+    <button onclick="doLogout()" style="background:none;border:1px solid var(--border);color:var(--text-muted);font-size:11px;padding:4px 10px;border-radius:7px;cursor:pointer;margin-left:4px">Esci</button>
   </div>
 </div>
 
 <!-- Nav -->
-<div class="nav">
+<div class="nav" id="app-nav" style="display:none">
   <button class="nav-btn" onclick="switchTab('guide')" id="tab-guide">❓ Guida</button>
   <button class="nav-btn active" onclick="switchTab('insert')" id="tab-insert">➕ Inserisci</button>
   <button class="nav-btn" onclick="switchTab('import')" id="tab-import">📥 Importa</button>
@@ -753,7 +777,7 @@
   <button class="nav-btn" onclick="switchTab('analysis')" id="tab-analysis">📊 Analisi</button>
 </div>
 
-<div class="main">
+<div class="main" id="app-main" style="display:none">
 
   <!-- ═══ INSERT TAB ═══ -->
   <div class="tab-content active" id="pane-insert">
@@ -1245,9 +1269,166 @@ const HEP = [
   { name: '800m',        unit: 'sec',    type: 'run' },
 ];
 
-// ── State ────────────────────────────────────────────────────────────
-let sport = 'deca';
-let sessionEntries = [];
+// ── Mapping disciplina DC → inventory ────────────────────────────────
+// Chiave inventory per atleta: athlete_m_dec (deca) / athlete_f_hep (hep)
+// Chiave gear: jersey/shorts/shoes + _m_ / _f_ + disc_key
+// Chiave center: center_m_ / center_f_ + disc_key
+// Chiave coach: coach_ + group_key + _value
+const DC_DISC_MAP = {
+  // DECA
+  '100m':        { gearKey: '100m',    coachGrp: 'sr' },
+  'Lungo':       { gearKey: 'lj',      coachGrp: 'j'  },
+  'Peso':        { gearKey: 'sp',      coachGrp: 't'  },
+  'Alto':        { gearKey: 'hj',      coachGrp: 'j'  },
+  '400m':        { gearKey: '400m',    coachGrp: 'sr' },
+  '110H':        { gearKey: '110h',    coachGrp: 'h'  },
+  'Disco':       { gearKey: 'dt',      coachGrp: 't'  },
+  'Asta':        { gearKey: 'pv',      coachGrp: 'j'  },
+  'Giavellotto': { gearKey: 'jt',      coachGrp: 't'  },
+  '1500m':       { gearKey: '1500m',   coachGrp: 'mr' },
+  // HEP
+  '100m ost.':   { gearKey: '110h',    coachGrp: 'h'  },
+  '200m':        { gearKey: '200m',    coachGrp: 'sr' },
+  '800m':        { gearKey: '800m',    coachGrp: 'mr' },
+};
+
+// ── Auth / Login ──────────────────────────────────────────────────────
+let currentUser = null;
+let myInventory = null;
+
+async function initApp() {
+  // 1. Prova auto-login da localStorage (chiave condivisa con Optimizer)
+  const saved = localStorage.getItem('italy_logged_user');
+  if (saved) {
+    try {
+      currentUser = JSON.parse(saved);
+      await loginSuccess();
+      return;
+    } catch(e) {
+      localStorage.removeItem('italy_logged_user');
+    }
+  }
+  // 2. Mostra login screen e carica lista giocatori
+  document.getElementById('login-screen').style.display = 'flex';
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/italy_players?select=id,name&active=eq.true&order=name`, {
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+    });
+    const players = await res.json();
+    const sel = document.getElementById('login-player');
+    players.forEach(p => {
+      const o = document.createElement('option');
+      o.value = p.id; o.textContent = p.name;
+      sel.appendChild(o);
+    });
+  } catch(e) { console.error('Player list error:', e); }
+}
+
+async function doLogin() {
+  const playerId = document.getElementById('login-player').value;
+  const pwd = document.getElementById('login-password').value;
+  const errEl = document.getElementById('login-error');
+  errEl.style.display = 'none';
+  if (!playerId || !pwd) {
+    errEl.style.display = 'block'; errEl.textContent = 'Seleziona il tuo nome e inserisci la password.'; return;
+  }
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/italy_players?select=id,name,is_admin,active&id=eq.${playerId}&password=eq.${encodeURIComponent(pwd)}&active=eq.true`, {
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+    });
+    const data = await res.json();
+    if (!data || !data.length) {
+      errEl.style.display = 'block'; errEl.textContent = 'Password errata o giocatore non trovato.'; return;
+    }
+    currentUser = data[0];
+    localStorage.setItem('italy_logged_user', JSON.stringify(currentUser));
+    await loginSuccess();
+  } catch(e) {
+    errEl.style.display = 'block'; errEl.textContent = 'Errore di connessione. Riprova.';
+  }
+}
+
+async function loginSuccess() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app-header').style.display = 'flex';
+  document.getElementById('app-nav').style.display = 'flex';
+  document.getElementById('app-main').style.display = 'block';
+  document.getElementById('header-username').textContent = currentUser.name;
+
+  // Carica inventory
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/italy_inventory?select=*&player_id=eq.${currentUser.id}&limit=1`, {
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+    });
+    const data = await res.json();
+    myInventory = data && data.length ? data[0] : null;
+  } catch(e) { myInventory = null; }
+
+  // Setup form
+  const yesterday = getYesterday();
+  document.getElementById('game_date').value = yesterday;
+  document.getElementById('importDate').value = yesterday;
+  document.getElementById('importNick').value = currentUser.id;
+  buildDiscSelect();
+  prefillMyValues();
+}
+
+function doLogout() {
+  currentUser = null; myInventory = null;
+  localStorage.removeItem('italy_logged_user');
+  document.getElementById('app-header').style.display = 'none';
+  document.getElementById('app-nav').style.display = 'none';
+  document.getElementById('app-main').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('login-password').value = '';
+}
+
+// ── Pre-fill "I miei" from inventory ─────────────────────────────────
+function prefillMyValues() {
+  if (!myInventory) return;
+  const disc = document.getElementById('discSelect').value;
+  const map  = DC_DISC_MAP[disc];
+  if (!map) return;
+
+  const gender = sport === 'deca' ? 'm' : 'f';
+  const athKey = sport === 'deca' ? 'athlete_m_dec' : 'athlete_f_hep';
+
+  // atleta universale
+  const athVal = myInventory[athKey + '_value'] || 0;
+  // maglia + pantaloni + scarpe per la disciplina
+  const jerseyVal  = myInventory[`jersey_${gender}_${map.gearKey}_value`]  || 0;
+  const shortsVal  = myInventory[`shorts_${gender}_${map.gearKey}_value`]  || 0;
+  const shoesVal   = myInventory[`shoes_${gender}_${map.gearKey}_value`]   || 0;
+  // centro allenamento
+  const centerVal  = myInventory[`center_${gender}_${map.gearKey}_value`]  || 0;
+  // allenatore
+  const coachVal   = myInventory[`coach_${map.coachGrp}_value`]            || 0;
+
+  const totalAtleta = athVal + jerseyVal + shortsVal + shoesVal + centerVal;
+
+  const atlField   = document.getElementById('my_atleta');
+  const coachField = document.getElementById('my_coach');
+
+  if (totalAtleta > 0) {
+    atlField.value = totalAtleta;
+    atlField.style.background = 'rgba(217,111,42,0.08)';
+    atlField.title = `Dec/Hep: ${athVal} + Maglia: ${jerseyVal} + Pant: ${shortsVal} + Scarpe: ${shoesVal} + Centro: ${centerVal}`;
+  } else {
+    atlField.value = '';
+    atlField.style.background = '';
+    atlField.title = '';
+  }
+
+  if (coachVal > 0) {
+    coachField.value = coachVal;
+    coachField.style.background = 'rgba(217,111,42,0.08)';
+    coachField.title = `Allenatore gruppo ${map.coachGrp.toUpperCase()}: ${coachVal}`;
+  } else {
+    coachField.value = '';
+    coachField.style.background = '';
+    coachField.title = '';
+  }
+}
 
 // ── Init ─────────────────────────────────────────────────────────────
 function getYesterday() {
@@ -1257,16 +1438,12 @@ function getYesterday() {
 }
 
 window.onload = () => {
-  const saved = localStorage.getItem('dc_nick');
-  if (saved) document.getElementById('nickInput').value = saved;
-  document.getElementById('nickInput').addEventListener('input', e => {
-    localStorage.setItem('dc_nick', e.target.value.trim());
-  });
-  const yesterday = getYesterday();
-  document.getElementById('game_date').value = yesterday;
-  document.getElementById('importDate').value = yesterday;
-  buildDiscSelect();
+  initApp();
 };
+
+// ── State ────────────────────────────────────────────────────────────
+let sport = 'deca';
+let sessionEntries = [];
 
 function buildDiscSelect() {
   const list = sport === 'deca' ? DECA : HEP;
@@ -1275,7 +1452,7 @@ function buildDiscSelect() {
     `<option value="${d.name}" data-unit="${d.unit}">${i+1}. ${d.name}  (${d.unit === 'sec' ? '⏱ secondi' : '📏 metri'})</option>`
   ).join('');
   updateUnit();
-  sel.addEventListener('change', updateUnit);
+  sel.onchange = () => { updateUnit(); prefillMyValues(); };
 }
 
 function updateUnit() {
@@ -1293,9 +1470,9 @@ function setSport(s) {
   document.getElementById('btn-deca').className = 'sport-btn' + (s === 'deca' ? ' active-deca' : '');
   document.getElementById('btn-hep').className  = 'sport-btn' + (s === 'hep'  ? ' active-hep'  : '');
   document.getElementById('btnAdd').className   = 'btn-add btn-add-' + s;
-  // update css accent
   document.documentElement.style.setProperty('--accent', s === 'deca' ? 'var(--deca)' : 'var(--hep)');
   buildDiscSelect();
+  prefillMyValues();
 }
 
 function switchTab(t) {
@@ -1303,18 +1480,17 @@ function switchTab(t) {
     document.getElementById('pane-'+id).classList.toggle('active', id === t);
     document.getElementById('tab-'+id).classList.toggle('active', id === t);
   });
-  const nick = document.getElementById('nickInput').value.trim();
-  if (t === 'import' && nick) document.getElementById('importNick').value = nick;
+  if (t === 'import' && currentUser) document.getElementById('importNick').value = currentUser.id;
   if (t === 'data') {
-    if (nick) document.getElementById('dataNick').value = nick;
+    if (currentUser) document.getElementById('dataNick').value = currentUser.id;
     loadNickList();
   }
 }
 
 // ── Submit ────────────────────────────────────────────────────────────
 async function submitEntry() {
-  const nick = document.getElementById('nickInput').value.trim();
-  if (!nick) { showToast('Inserisci il tuo nick prima!', 'err'); return; }
+  if (!currentUser) { showToast('Devi essere loggato!', 'err'); return; }
+  const nick = currentUser.id;
 
   const disc = document.getElementById('discSelect').value;
   const game_date = document.getElementById('game_date').value || null;
@@ -1333,7 +1509,6 @@ async function submitEntry() {
     opp_coach:  parseInt(document.getElementById('opp_coach').value)    || null,
   };
 
-  // Validazione: obbligatori solo i miei dati (DP + Coach)
   if (!row.my_dp || !row.my_coach) {
     showToast('Inserisci almeno i tuoi DP e Allenatore', 'err');
     return;
@@ -1362,12 +1537,16 @@ async function submitEntry() {
   const list = sport === 'deca' ? DECA : HEP;
   const sel = document.getElementById('discSelect');
   const curr = sel.selectedIndex;
-  if (curr < list.length - 1) sel.selectedIndex = curr + 1;
-  updateUnit();
+  if (curr < list.length - 1) {
+    sel.selectedIndex = curr + 1;
+    updateUnit();
+    prefillMyValues();
+  }
 }
 
 function clearForm() {
-  ['my_prest','my_dp','my_atleta','my_coach','opp_prest','opp_dp','opp_atleta','opp_coach']
+  // Solo i campi che l'utente ha inserito manualmente — i precompilati vengono ricalcolati
+  ['my_prest','my_dp','opp_prest','opp_dp','opp_atleta','opp_coach']
     .forEach(id => document.getElementById(id).value = '');
 }
 
