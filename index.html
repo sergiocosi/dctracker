@@ -986,6 +986,14 @@
       <button class="btn-add btn-add-deca" style="margin-top:8px" onclick="runAnalysis()">
         Aggiorna analisi
       </button>
+      <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+        <button class="btn-add" style="flex:1;background:var(--surface2);color:var(--text);border:1px solid var(--border)" onclick="exportRawCSV()">
+          📥 Esporta dati grezzi (CSV)
+        </button>
+        <button class="btn-add" style="flex:1;background:var(--surface2);color:var(--text);border:1px solid var(--border)" onclick="exportAnalysisJSON()">
+          📥 Esporta analisi (JSON)
+        </button>
+      </div>
     </div>
     <div id="analysisResult"><div class="no-data">Premi "Aggiorna analisi" per caricare i dati dal database.</div></div>
   </div>
@@ -1294,6 +1302,7 @@ const DC_DISC_MAP = {
 
 // ── Auth / Login ──────────────────────────────────────────────────────
 let currentUser = null;
+let lastAnalysisResult = null; // popolato da runAnalysis(), usato dagli export
 let myInventory = null;
 
 async function initApp() {
@@ -1574,6 +1583,8 @@ function renderLog() {
 }
 
 // ── Analysis ──────────────────────────────────────────────────────────
+function round2(n) { return Math.round(n * 100) / 100; }
+
 async function runAnalysis() {
   const el = document.getElementById('analysisResult');
   el.innerHTML = '<div class="no-data">Caricamento dati…</div>';
@@ -1590,6 +1601,7 @@ async function runAnalysis() {
   if (!data.length) { el.innerHTML = '<div class="no-data">Nessun dato nel database.</div>'; return; }
 
   const paradoxes = [];
+  const discResults = [];
 
   // byDisc: raccoglie punti (miei + avversari) e righe complete per disciplina
   const byDisc = {};
@@ -1695,6 +1707,7 @@ async function runAnalysis() {
 
     // ── Statistiche casi puri ────────────────────────────────────────
     const pureCoeffs = coeffs.filter(c => c.source === 'WP' || c.source === 'XP');
+    let pureStats = null;
     let pureHtml = '';
     if (pureCoeffs.length >= 1) {
       const pVals   = pureCoeffs.map(c => c.v);
@@ -1703,6 +1716,7 @@ async function runAnalysis() {
       const pMed    = pSorted.length % 2 === 0
         ? (pSorted[pSorted.length/2-1] + pSorted[pSorted.length/2]) / 2
         : pSorted[Math.floor(pSorted.length/2)];
+      pureStats = { avgDP: round2(pAvg), medianDP: round2(pMed), count: pureCoeffs.length, sameGame: wpCount, crossGame: xpCount };
       pureHtml = `
         <div class="pure-box">
           <div class="pure-box-title">📌 Stima pura — Δatleta = 0 <span class="pure-badge">P</span></div>
@@ -1728,6 +1742,20 @@ async function runAnalysis() {
 
     const color = sp === 'deca' ? 'var(--deca)' : 'var(--hep)';
     const badge = sp === 'deca' ? 'badge-deca' : 'badge-hep';
+
+    discResults.push({
+      discipline: disc,
+      sport: sp,
+      pairsTotal: coeffs.length,
+      avgDP: round2(avg),
+      medianDP: round2(med),
+      sameGameW: wCount,
+      sameGamePure: wpCount,
+      crossGameX: xCount,
+      crossGamePure: xpCount,
+      maxDeltaAtleta,
+      pureStats
+    });
 
     html += `
       <div class="analysis-disc">
@@ -1837,6 +1865,66 @@ async function runAnalysis() {
 
   document.getElementById('analysisResult').innerHTML =
     (html || '<div class="no-data">Nessuna coppia trovata con i parametri attuali.</div>') + paradoxHtml;
+
+  // ── Salvo i risultati per l'export (CSV dati grezzi + JSON analisi) ──
+  lastAnalysisResult = {
+    generatedAt: new Date().toISOString(),
+    params: { maxDeltaAtleta, sportFilter, pureOnly },
+    rawRowsCount: data.length,
+    rawRows: data,
+    byDiscipline: discResults,
+    paradoxes: uniqueParadoxes
+  };
+}
+
+// ── Export ────────────────────────────────────────────────────────────
+function downloadFile(filename, content, mime) {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function csvEscape(v) {
+  if (v === null || v === undefined) return '';
+  const s = String(v);
+  return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+
+function exportRawCSV() {
+  if (!lastAnalysisResult || !lastAnalysisResult.rawRows.length) {
+    showToast('Premi prima "Aggiorna analisi" per caricare i dati', 'err');
+    return;
+  }
+  const rows = lastAnalysisResult.rawRows;
+  const cols = ['id','nick','sport','discipline','game_date','my_prest','my_dp','my_atleta','my_coach','opp_prest','opp_dp','opp_atleta','opp_coach','created_at'];
+  const header = cols.join(',');
+  const lines = rows.map(r => cols.map(c => csvEscape(r[c])).join(','));
+  const csv = header + '\n' + lines.join('\n');
+  const today = new Date().toISOString().slice(0,10);
+  downloadFile(`dc_tracker_dati_grezzi_${today}.csv`, csv, 'text/csv;charset=utf-8');
+  showToast(`Esportate ${rows.length} righe`, 'ok');
+}
+
+function exportAnalysisJSON() {
+  if (!lastAnalysisResult || !lastAnalysisResult.byDiscipline.length) {
+    showToast('Premi prima "Aggiorna analisi" per generare i risultati', 'err');
+    return;
+  }
+  const json = JSON.stringify({
+    generatedAt: lastAnalysisResult.generatedAt,
+    params: lastAnalysisResult.params,
+    byDiscipline: lastAnalysisResult.byDiscipline,
+    paradoxes: lastAnalysisResult.paradoxes
+  }, null, 2);
+  const today = new Date().toISOString().slice(0,10);
+  downloadFile(`dc_tracker_analisi_${today}.json`, json, 'application/json;charset=utf-8');
+  showToast('Analisi esportata', 'ok');
 }
 
 function toggleParadoxes(btn) {
