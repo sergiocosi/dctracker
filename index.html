@@ -1585,6 +1585,22 @@ function renderLog() {
 // ── Analysis ──────────────────────────────────────────────────────────
 function round2(n) { return Math.round(n * 100) / 100; }
 
+// Supabase limita le risposte a 1000 righe per default: questa funzione pagina
+// la query con .range() per recuperare TUTTE le righe della tabella, qualunque sia il totale.
+async function fetchAllRows(buildQuery) {
+  const PAGE = 1000;
+  let allRows = [];
+  let from = 0;
+  while (true) {
+    const { data, error } = await buildQuery().range(from, from + PAGE - 1);
+    if (error) return { data: null, error };
+    allRows = allRows.concat(data);
+    if (data.length < PAGE) break; // ultima pagina raggiunta
+    from += PAGE;
+  }
+  return { data: allRows, error: null };
+}
+
 async function runAnalysis() {
   const el = document.getElementById('analysisResult');
   el.innerHTML = '<div class="no-data">Caricamento dati…</div>';
@@ -1593,10 +1609,11 @@ async function runAnalysis() {
   const sportFilter    = document.getElementById('filterSport').value;
   const pureOnly       = document.getElementById('filterPureOnly').checked;
 
-  let query = db.from('ac_dc_confronto').select('*');
-  if (sportFilter !== 'all') query = query.eq('sport', sportFilter);
-
-  const { data, error } = await query;
+  const { data, error } = await fetchAllRows(() => {
+    let q = db.from('ac_dc_confronto').select('*').order('id', { ascending: true });
+    if (sportFilter !== 'all') q = q.eq('sport', sportFilter);
+    return q;
+  });
   if (error) { el.innerHTML = `<div class="no-data">Errore: ${error.message}</div>`; return; }
   if (!data.length) { el.innerHTML = '<div class="no-data">Nessun dato nel database.</div>'; return; }
 
@@ -1938,13 +1955,13 @@ function toggleParadoxes(btn) {
 // ── User data tab ────────────────────────────────────────────────────
 async function loadNickList() {
   try {
-    const { data } = await db.from('ac_dc_confronto').select('nick');
+    const { data } = await fetchAllRows(() => db.from('ac_dc_confronto').select('nick'));
     if (!data) return;
     const nicks = [...new Set(data.map(r => r.nick).filter(Boolean))].sort();
     const dl = document.getElementById('dataNickList');
     dl.innerHTML = nicks.map(n => `<option value="${n}">`).join('');
     // Also populate disc filter
-    const { data: discs } = await db.from('ac_dc_confronto').select('discipline');
+    const { data: discs } = await fetchAllRows(() => db.from('ac_dc_confronto').select('discipline'));
     if (discs) {
       const uniq = [...new Set(discs.map(r => r.discipline).filter(Boolean))].sort();
       const sel = document.getElementById('dataFilterDisc');
@@ -1962,13 +1979,14 @@ async function loadUserData() {
   const el = document.getElementById('dataResult');
   el.innerHTML = '<div class="no-data">Caricamento…</div>';
 
-  let query = db.from('ac_dc_confronto').select('*').eq('nick', nick)
-    .order('game_date', { ascending: false, nullsFirst: false })
-    .order('created_at', { ascending: false });
-  if (sport !== 'all') query = query.eq('sport', sport);
-  if (disc  !== 'all') query = query.eq('discipline', disc);
-
-  const { data, error } = await query;
+  const { data, error } = await fetchAllRows(() => {
+    let q = db.from('ac_dc_confronto').select('*').eq('nick', nick)
+      .order('game_date', { ascending: false, nullsFirst: false })
+      .order('created_at', { ascending: false });
+    if (sport !== 'all') q = q.eq('sport', sport);
+    if (disc  !== 'all') q = q.eq('discipline', disc);
+    return q;
+  });
   if (error) { el.innerHTML = `<div class="no-data">Errore: ${error.message}</div>`; return; }
   if (!data || !data.length) {
     el.innerHTML = `<div class="no-data">Nessun dato trovato per "<b>${nick}</b>".</div>`;
