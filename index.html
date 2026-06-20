@@ -1261,14 +1261,14 @@ const DECA = [
   { name: 'Peso',        unit: 'm',      type: 'field' },
   { name: 'Alto',        unit: 'm',      type: 'field' },
   { name: '400m',        unit: 'sec',    type: 'run' },
-  { name: '110H',        unit: 'sec',    type: 'run' },
+  { name: '110h',        unit: 'sec',    type: 'run' },
   { name: 'Disco',       unit: 'm',      type: 'field' },
   { name: 'Asta',        unit: 'm',      type: 'field' },
   { name: 'Giavellotto', unit: 'm',      type: 'field' },
   { name: '1500m',       unit: 'sec',    type: 'run' },
 ];
 const HEP = [
-  { name: '100m ost.',   unit: 'sec',    type: 'run' },
+  { name: '100h',        unit: 'sec',    type: 'run' },
   { name: 'Alto',        unit: 'm',      type: 'field' },
   { name: 'Peso',        unit: 'm',      type: 'field' },
   { name: '200m',        unit: 'sec',    type: 'run' },
@@ -1289,13 +1289,13 @@ const DC_DISC_MAP = {
   'Peso':        { gearKey: 'sp',      coachGrp: 't'  },
   'Alto':        { gearKey: 'hj',      coachGrp: 'j'  },
   '400m':        { gearKey: '400m',    coachGrp: 'sr' },
-  '110H':        { gearKey: '110h',    coachGrp: 'h'  },
+  '110h':        { gearKey: '110h',    coachGrp: 'h'  },
   'Disco':       { gearKey: 'dt',      coachGrp: 't'  },
   'Asta':        { gearKey: 'pv',      coachGrp: 'j'  },
   'Giavellotto': { gearKey: 'jt',      coachGrp: 't'  },
   '1500m':       { gearKey: '1500m',   coachGrp: 'mr' },
   // HEP
-  '100m ost.':   { gearKey: '110h',    coachGrp: 'h'  },
+  '100h':        { gearKey: '110h',    coachGrp: 'h'  },
   '200m':        { gearKey: '200m',    coachGrp: 'sr' },
   '800m':        { gearKey: '800m',    coachGrp: 'mr' },
 };
@@ -2051,8 +2051,8 @@ function renderUserData(data, nick) {
 }
 
 // ── Import ────────────────────────────────────────────────────────────
-const DECA_DISCS = ['100m','Lungo','Peso','Alto','400m','110hs','Disco','Asta','Giavellotto','1500m'];
-const HEP_DISCS  = ['100hs','Alto','Peso','200m','Lungo','Giavellotto','800m'];
+const DECA_DISCS = ['100m','Lungo','Peso','Alto','400m','110h','Disco','Asta','Giavellotto','1500m'];
+const HEP_DISCS  = ['100h','Alto','Peso','200m','Lungo','Giavellotto','800m'];
 
 let importRows = [];
 
