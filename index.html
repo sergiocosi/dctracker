@@ -285,6 +285,68 @@
   .toast.ok   { border-left: 3px solid var(--green); }
   .toast.err  { border-left: 3px solid var(--red); }
 
+  /* ── Edit button (tabella dati) ── */
+  .btn-edit-row {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 3px 7px;
+    font-size: 12px;
+    cursor: pointer;
+    color: var(--text-muted);
+    transition: all 0.15s;
+  }
+  .btn-edit-row:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ── Edit modal ── */
+  .edit-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(30,26,22,0.45);
+    z-index: 500;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+  .edit-overlay.show { display: flex; }
+  .edit-modal {
+    background: var(--surface);
+    border-radius: 14px;
+    padding: 18px;
+    max-width: 480px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  .edit-modal-title {
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .edit-modal-sub {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 14px;
+  }
+  .edit-modal-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 6px;
+  }
+  .btn-secondary {
+    flex: 1;
+    padding: 13px;
+    border: 1px solid var(--border);
+    border-radius: 11px;
+    background: var(--surface2);
+    color: var(--text);
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .edit-modal-actions .btn-add { flex: 2; margin-top: 0; }
+
   /* ── Session log ── */
   .log-entry {
     display: flex;
@@ -1249,6 +1311,54 @@
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
+<!-- ═══ EDIT MODAL ═══ -->
+<div class="edit-overlay" id="editOverlay">
+  <div class="edit-modal">
+    <div class="edit-modal-title">✏️ Modifica riga</div>
+    <div class="edit-modal-sub" id="editModalSub"></div>
+
+    <div class="form-cols" style="grid-template-columns:1fr 1fr;margin-bottom:10px">
+      <div class="field">
+        <label>Sport</label>
+        <select id="edit_sport" onchange="editRebuildDiscSelect()">
+          <option value="deca">Decathlon</option>
+          <option value="hep">Heptathlon</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Disciplina</label>
+        <select id="edit_discipline"></select>
+      </div>
+    </div>
+    <div class="field">
+      <label>Data</label>
+      <input type="date" id="edit_game_date">
+    </div>
+
+    <div class="form-cols">
+      <div class="col-my">
+        <div class="form-col-header">I miei</div>
+        <div class="field"><label>Prestazione</label><input type="number" step="0.01" id="edit_my_prest"></div>
+        <div class="field"><label>DP</label><input type="number" id="edit_my_dp"></div>
+        <div class="field"><label>Atleta 🔥</label><input type="number" id="edit_my_atleta"></div>
+        <div class="field"><label>Allenatore 💧</label><input type="number" id="edit_my_coach"></div>
+      </div>
+      <div class="col-opp">
+        <div class="form-col-header">Avversario</div>
+        <div class="field"><label>Prestazione</label><input type="number" step="0.01" id="edit_opp_prest"></div>
+        <div class="field"><label>DP</label><input type="number" id="edit_opp_dp"></div>
+        <div class="field"><label>Atleta 🔥</label><input type="number" id="edit_opp_atleta"></div>
+        <div class="field"><label>Allenatore 💧</label><input type="number" id="edit_opp_coach"></div>
+      </div>
+    </div>
+
+    <div class="edit-modal-actions">
+      <button class="btn-secondary" onclick="closeEditModal()">Annulla</button>
+      <button class="btn-add btn-add-deca" id="btnSaveEdit" onclick="saveEditRow()">Salva modifiche</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const SUPABASE_URL = 'https://wkrkqkvswdwdjghfwebo.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indrcmtxa3Zzd2R3ZGpnaGZ3ZWJvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2OTA3OTksImV4cCI6MjA4OTI2Njc5OX0.hBgyybr8i2GPG9rFPsZGOsJ9EyWEBPbrcJ96ttkeRbI';
@@ -2029,6 +2139,9 @@ function renderUserData(data, nick) {
     </div>
   `;
 
+  currentTableData = data;
+  const canEdit = currentUser && (currentUser.is_admin || nick === currentUser.id);
+
   let rows = '';
   for (const r of data) {
     const badge = r.sport === 'deca'
@@ -2046,6 +2159,7 @@ function renderUserData(data, nick) {
       <td class="col-opp">${r.opp_coach ?? '—'}</td>
       <td class="col-opp">${r.opp_prest ?? '—'}</td>
       <td class="col-opp">${r.opp_dp ?? '—'}</td>
+      ${canEdit ? `<td><button class="btn-edit-row" onclick="openEditModal(${r.id})">✏️</button></td>` : ''}
     </tr>`;
   }
 
@@ -2060,12 +2174,95 @@ function renderUserData(data, nick) {
           <th class="col-my">Atl 🔥</th><th class="col-my">Coach 💧</th>
           <th class="col-opp">Atl avv.</th><th class="col-opp">Coach avv.</th>
           <th class="col-opp">Prest avv.</th><th class="col-opp">DP avv.</th>
+          ${canEdit ? '<th></th>' : ''}
         </tr></thead>
         <tbody>${rows}</tbody>
       </table>
     </div>
   `;
   el.innerHTML = table;
+}
+
+// ── Edit modal ────────────────────────────────────────────────────────
+let currentTableData = [];
+let editingRowId = null;
+
+function editRebuildDiscSelect() {
+  const sport = document.getElementById('edit_sport').value;
+  const list = sport === 'deca' ? DECA : HEP;
+  const sel = document.getElementById('edit_discipline');
+  sel.innerHTML = list.map(d => `<option value="${d.name}">${d.name}</option>`).join('');
+}
+
+function openEditModal(rowId) {
+  const r = currentTableData.find(x => x.id === rowId);
+  if (!r) { showToast('Riga non trovata', 'err'); return; }
+  editingRowId = rowId;
+
+  document.getElementById('edit_sport').value = r.sport;
+  editRebuildDiscSelect();
+  document.getElementById('edit_discipline').value = r.discipline;
+  document.getElementById('edit_game_date').value = r.game_date || '';
+  document.getElementById('edit_my_prest').value  = r.my_prest  ?? '';
+  document.getElementById('edit_my_dp').value     = r.my_dp     ?? '';
+  document.getElementById('edit_my_atleta').value = r.my_atleta ?? '';
+  document.getElementById('edit_my_coach').value  = r.my_coach  ?? '';
+  document.getElementById('edit_opp_prest').value  = r.opp_prest  ?? '';
+  document.getElementById('edit_opp_dp').value     = r.opp_dp     ?? '';
+  document.getElementById('edit_opp_atleta').value = r.opp_atleta ?? '';
+  document.getElementById('edit_opp_coach').value  = r.opp_coach  ?? '';
+
+  const owner = currentUser.is_admin && r.nick !== currentUser.id;
+  document.getElementById('editModalSub').textContent = owner
+    ? `Nick: ${r.nick} · stai modificando come admin`
+    : `Nick: ${r.nick}`;
+
+  document.getElementById('editOverlay').classList.add('show');
+}
+
+function closeEditModal() {
+  document.getElementById('editOverlay').classList.remove('show');
+  editingRowId = null;
+}
+
+async function saveEditRow() {
+  if (!editingRowId) return;
+  const updated = {
+    sport:      document.getElementById('edit_sport').value,
+    discipline: document.getElementById('edit_discipline').value,
+    game_date:  document.getElementById('edit_game_date').value || null,
+    my_prest:   parseFloat(document.getElementById('edit_my_prest').value)   || null,
+    my_dp:      parseInt(document.getElementById('edit_my_dp').value)        || null,
+    my_atleta:  parseInt(document.getElementById('edit_my_atleta').value)    || null,
+    my_coach:   parseInt(document.getElementById('edit_my_coach').value)     || null,
+    opp_prest:  parseFloat(document.getElementById('edit_opp_prest').value)  || null,
+    opp_dp:     parseInt(document.getElementById('edit_opp_dp').value)       || null,
+    opp_atleta: parseInt(document.getElementById('edit_opp_atleta').value)   || null,
+    opp_coach:  parseInt(document.getElementById('edit_opp_coach').value)    || null,
+  };
+
+  if (!updated.my_dp || !updated.my_coach) {
+    showToast('Inserisci almeno i tuoi DP e Allenatore', 'err');
+    return;
+  }
+
+  const btn = document.getElementById('btnSaveEdit');
+  btn.disabled = true;
+  btn.textContent = 'Salvataggio…';
+
+  const { error } = await db.from('ac_dc_confronto').update(updated).eq('id', editingRowId);
+
+  btn.disabled = false;
+  btn.textContent = 'Salva modifiche';
+
+  if (error) {
+    showToast('Errore: ' + error.message, 'err');
+    return;
+  }
+
+  showToast('✓ Riga aggiornata!', 'ok');
+  closeEditModal();
+  loadUserData();
 }
 
 // ── Import ────────────────────────────────────────────────────────────
