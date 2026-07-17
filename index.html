@@ -2089,20 +2089,28 @@ async function loadUserData() {
   const el = document.getElementById('dataResult');
   el.innerHTML = '<div class="no-data">Caricamento…</div>';
 
-  const { data, error } = await fetchAllRows(() => {
-    let q = db.from('ac_dc_confronto').select('*').eq('nick', nick)
+  // Prendiamo SEMPRE tutte le righe del nick (senza filtro sport/disciplina):
+  // servono intere per calcolare i record personali, indipendentemente da
+  // cosa l'utente ha selezionato nei filtri. Il filtro si applica poi solo
+  // al log dettagliato, in locale.
+  const { data: allData, error } = await fetchAllRows(() => {
+    return db.from('ac_dc_confronto').select('*').eq('nick', nick)
       .order('game_date', { ascending: false, nullsFirst: false })
       .order('created_at', { ascending: false });
-    if (sport !== 'all') q = q.eq('sport', sport);
-    if (disc  !== 'all') q = q.eq('discipline', disc);
-    return q;
   });
   if (error) { el.innerHTML = `<div class="no-data">Errore: ${error.message}</div>`; return; }
-  if (!data || !data.length) {
+  if (!allData || !allData.length) {
     el.innerHTML = `<div class="no-data">Nessun dato trovato per "<b>${nick}</b>".</div>`;
     return;
   }
-  renderUserData(data, nick);
+  let data = allData;
+  if (sport !== 'all') data = data.filter(r => r.sport === sport);
+  if (disc  !== 'all') data = data.filter(r => r.discipline === disc);
+  if (!data.length) {
+    el.innerHTML = `<div class="no-data">Nessuna riga corrisponde ai filtri selezionati per "<b>${nick}</b>".</div>`;
+    return;
+  }
+  renderUserData(data, nick, allData);
 }
 
 function fmtDate(d) {
@@ -2111,7 +2119,52 @@ function fmtDate(d) {
   return `${dd}/${m}/${y}`;
 }
 
-function renderUserData(data, nick) {
+// ── Record personali (min/max per disciplina, come nel foglio Excel) ──
+function buildRecordsCard(allData) {
+  function bestRows(sport, discList) {
+    return discList.map(d => {
+      const rows = allData.filter(r =>
+        r.sport === sport && r.discipline === d.name &&
+        typeof r.my_prest === 'number' && r.my_prest > 0
+      );
+      if (!rows.length) return { ...d, best: null };
+      const best = d.unit === 'sec'
+        ? rows.reduce((a, b) => (b.my_prest < a.my_prest ? b : a))
+        : rows.reduce((a, b) => (b.my_prest > a.my_prest ? b : a));
+      return { ...d, best };
+    });
+  }
+
+  function tableFor(sport, discList, label, badgeClass) {
+    const withRecords = bestRows(sport, discList);
+    if (!withRecords.some(r => r.best)) return '';
+    const trs = withRecords.map(r => {
+      if (!r.best) return `<tr><td style="text-align:left">${r.name}</td><td colspan="3" style="color:var(--text-dim);text-align:center">—</td></tr>`;
+      return `<tr>
+        <td style="text-align:left">${r.name}</td>
+        <td class="col-my">${r.best.my_prest}${r.unit === 'sec' ? ' s' : ' m'}</td>
+        <td class="col-my">${r.best.my_dp ?? '—'}</td>
+        <td>${fmtDate(r.best.game_date)}</td>
+      </tr>`;
+    }).join('');
+    return `
+      <div class="card" style="margin-bottom:12px">
+        <div class="card-title" style="margin-bottom:12px"><span class="sport-badge ${badgeClass}">${sport === 'deca' ? 'D' : 'H'}</span> ${label} — record personali</div>
+        <table class="data-table">
+          <thead><tr>
+            <th style="text-align:left">Disciplina</th><th class="col-my">Migliore</th><th class="col-my">DP</th><th>Data</th>
+          </tr></thead>
+          <tbody>${trs}</tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  return tableFor('deca', DECA, 'Decathlon', 'badge-deca') + tableFor('hep', HEP, 'Heptathlon', 'badge-hep');
+}
+
+function renderUserData(data, nick, allData) {
+  allData = allData || data;
   const el = document.getElementById('dataResult');
   const decaCount = data.filter(r => r.sport === 'deca').length;
   const hepCount  = data.filter(r => r.sport === 'hep').length;
@@ -2163,7 +2216,10 @@ function renderUserData(data, nick) {
     </tr>`;
   }
 
+  const recordsHtml = buildRecordsCard(allData);
+
   const table = `
+    ${recordsHtml}
     <div class="card">
       <div class="card-title" style="margin-bottom:12px">📋 ${data.length} righe — ${nick}</div>
       ${summary}
